@@ -33,7 +33,7 @@ const state = {
   outputLang: "en",
   provider: "gemini",
   splitEnabled: false,
-  segmentCount: 3,
+  segmentCount: 2,
   preserveFaces: true,
   hasDialogue: false,
   musicEnabled: false,
@@ -282,8 +282,6 @@ const langFaBtn = $("langFaBtn");
 const providerClaudeBtn = $("providerClaudeBtn");
 const providerGeminiBtn = $("providerGeminiBtn");
 const splitToggle = $("splitToggle");
-const segmentCountRow = $("segmentCountRow");
-const segmentCountButtons = $("segmentCountButtons");
 const preserveFacesToggle = $("preserveFacesToggle");
 const dialogueToggle = $("dialogueToggle");
 const dialogueSub = $("dialogueSub");
@@ -337,6 +335,13 @@ const swapResultBox = $("swapResultBox");
 const swapResultText = $("swapResultText");
 const swapCopyBtn = $("swapCopyBtn");
 
+const titlesTopicInput = $("titlesTopicInput");
+const titlesErrorBox = $("titlesErrorBox");
+const titlesGenerateBtn = $("titlesGenerateBtn");
+const titlesResultBox = $("titlesResultBox");
+const titlesResultText = $("titlesResultText");
+const titlesCopyBtn = $("titlesCopyBtn");
+
 // ---------- Init static UI ----------
 function initSelects() {
   platformSelect.innerHTML = PLATFORMS.map((p) => `<option value="${p.id}">${p.label}</option>`).join("");
@@ -347,10 +352,6 @@ function initSelects() {
 
   durationSelect.innerHTML = DURATIONS.map((d) => `<option value="${d}">${d}</option>`).join("");
   durationSelect.value = state.duration;
-
-  segmentCountButtons.innerHTML = [2, 3, 4, 5, 6]
-    .map((n) => `<button class="segment-btn${n === state.segmentCount ? " active" : ""}" data-n="${n}">${n}</button>`)
-    .join("");
 }
 
 function renderStylePresets() {
@@ -451,13 +452,6 @@ imageInput.addEventListener("change", async (e) => {
 splitToggle.addEventListener("click", () => {
   state.splitEnabled = !state.splitEnabled;
   setSwitch(splitToggle, state.splitEnabled);
-  segmentCountRow.classList.toggle("hidden", !state.splitEnabled);
-});
-segmentCountButtons.addEventListener("click", (e) => {
-  const btn = e.target.closest("[data-n]");
-  if (!btn) return;
-  state.segmentCount = Number(btn.dataset.n);
-  [...segmentCountButtons.children].forEach((b) => b.classList.toggle("active", Number(b.dataset.n) === state.segmentCount));
 });
 
 preserveFacesToggle.addEventListener("click", () => {
@@ -679,6 +673,10 @@ function closeModal() {
   swapErrorBox.classList.add("hidden");
   swapResultBox.classList.add("hidden");
   swapGenerateBtn.disabled = true;
+
+  titlesTopicInput.value = "";
+  titlesErrorBox.classList.add("hidden");
+  titlesResultBox.classList.add("hidden");
 }
 
 videoFileBtn.addEventListener("click", () => videoFileInput.click());
@@ -989,7 +987,7 @@ Structure the output with these exact uppercase section labels:
 
 LOGLINE — one vivid sentence.
 SCENE & SETTING — location, time of day, environment, exactly as seen in the original frames.
-SUBJECT — describe the NEW character using the reference photo's facial features, hairstyle, and distinguishing traits in detail. Explicitly state this identity replaces the original person while everything else about the scene stays identical.
+SUBJECT — describe the NEW character using the reference photo's facial features, hairstyle, and distinguishing traits in detail. Explicitly state this identity replaces the original person while everything else about the scene stays identical. Include a direct instruction such as: "Use the provided/attached reference photo for this character's face and identity" — phrased so it still makes sense if the person also uploads that same reference photo directly into a video platform's own character/reference-image field, not just as a text description.
 ACTION & TIMELINE — the same action/motion observed across the original frames.
 CAMERA — shot type, framing, movement, exactly as in the original.
 LIGHTING & COLOR — as observed in the original footage.
@@ -1037,6 +1035,49 @@ swapGenerateBtn.addEventListener("click", async () => {
 
 swapCopyBtn.addEventListener("click", () => {
   navigator.clipboard.writeText(swapResultText.textContent).then(() => flashCopied(swapCopyBtn));
+});
+
+// ---------- More modal: viral titles & hashtags ----------
+function buildTitlesSystemPrompt() {
+  return `You are a viral social media strategist specializing in catchy, high-click-through titles/captions and hashtag research for short-form video (TikTok, YouTube Shorts, Instagram Reels).
+
+Given a short description of a video's topic/idea, produce:
+
+TITLES — exactly 8 catchy, scroll-stopping, user-friendly title/caption options in English, each on its own line, numbered 1-8. Vary the style across the list (curiosity-driven, bold claim, funny, relatable, question-based, etc). Keep each under 12 words.
+HASHTAGS — a single line of 15-20 relevant, high-traffic English hashtags (mix of broad/popular and niche-specific), space-separated, each starting with #.
+
+Do not add any preamble, explanation, or markdown formatting like asterisks. Just the two labeled sections exactly as specified above.`;
+}
+
+titlesGenerateBtn.addEventListener("click", async () => {
+  const topic = titlesTopicInput.value.trim() || ideaInput.value.trim();
+  if (!topic) {
+    titlesErrorBox.textContent = "لطفاً موضوع یا ایده‌ی ویدیو را بنویس.";
+    titlesErrorBox.classList.remove("hidden");
+    return;
+  }
+  titlesErrorBox.classList.add("hidden");
+  titlesResultBox.classList.add("hidden");
+  titlesGenerateBtn.disabled = true;
+  titlesGenerateBtn.textContent = "در حال تولید...";
+
+  try {
+    const text = await callAI(buildTitlesSystemPrompt(), [
+      { role: "user", content: [{ type: "text", text: `موضوع/ایده ویدیو: ${topic}` }] },
+    ]);
+    titlesResultText.textContent = text;
+    titlesResultBox.classList.remove("hidden");
+  } catch (err) {
+    titlesErrorBox.textContent = "تولید ناموفق بود. دوباره تلاش کن.";
+    titlesErrorBox.classList.remove("hidden");
+  } finally {
+    titlesGenerateBtn.disabled = false;
+    titlesGenerateBtn.textContent = "تولید عنوان و هشتگ";
+  }
+});
+
+titlesCopyBtn.addEventListener("click", () => {
+  navigator.clipboard.writeText(titlesResultText.textContent).then(() => flashCopied(titlesCopyBtn));
 });
 
 // ---------- Init ----------
