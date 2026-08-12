@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>پرامت‌ساز ویدیو</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&family=Syne:wght@700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo-badge">🎬</div>
+      <div class="header-text">
+        <h1>پرامت‌ساز ویدیو</h1>
+        <p>ایده + عکس مرجع ← پرامت سینمایی و کامل برای هوش مصنوعی ویدیوساز</p>
+      </div>
+      <button id="moreBtn" class="btn-outline">⋯ بیشتر</button>
+    </div>
+  </header>
+
+  <main class="main-grid">
+    <!-- LEFT: Inputs -->
+    <section class="col">
+
+      <div class="card">
+        <label class="field-label">سبک ویدیو</label>
+        <div id="stylePresetsRow" class="chip-row"></div>
+        <p id="styleDesc" class="hint-text">یک سبک را انتخاب کن تا به پرامت اضافه شود (اختیاری)</p>
+      </div>
+
+      <div class="card">
+        <label class="field-label">ایده کلی ویدیو</label>
+        <textarea id="ideaInput" rows="4" placeholder="مثلاً: یک زن جوان زیر باران در خیابان‌های شبانه توکیو قدم می‌زند، نئون‌ها روی آسفالت خیس منعکس شده..."></textarea>
+      </div>
+
+      <div class="card">
+        <div class="row-between">
+          <label class="field-label">عکس‌های مرجع (حداکثر ۴)</label>
+          <span id="imageCount" class="hint-text small">0/4</span>
+        </div>
+        <div id="imagesRow" class="chip-row filmstrip"></div>
+        <input id="imageInput" type="file" accept="image/*" multiple hidden />
+      </div>
+
+      <div class="card">
+        <label class="field-label">پلتفرم هدف</label>
+        <select id="platformSelect" class="select"></select>
+
+        <div class="two-col">
+          <div>
+            <label class="field-label">نسبت تصویر</label>
+            <select id="aspectSelect" class="select"></select>
+          </div>
+          <div>
+            <label class="field-label">مدت زمان</label>
+            <select id="durationSelect" class="select"></select>
+          </div>
+        </div>
+
+        <label class="field-label">یادداشت سبک (اختیاری)</label>
+        <input id="styleNotesInput" type="text" class="input" placeholder="مثلاً: حس فیلم نوآر، لنز آنامورفیک، رنگ‌های سرد" />
+
+        <div class="lang-row">
+          <span class="field-label inline">ارائه‌دهنده:</span>
+          <button id="providerClaudeBtn" class="pill">Claude</button>
+          <button id="providerGeminiBtn" class="pill active">Gemini</button>
+        </div>
+
+        <div class="lang-row">
+          <span class="field-label inline">زبان خروجی:</span>
+          <button id="langEnBtn" class="pill active">English</button>
+          <button id="langFaBtn" class="pill">فارسی</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <label class="field-label">گزینه‌های پیشرفته</label>
+
+        <div class="toggle-row">
+          <div>
+            <p class="toggle-label">تقسیم به چند پرامت متوالی</p>
+            <p class="toggle-sub">برای ویدیوهای طولانی‌تر، هر پرامت از فریم پایانی پرامت قبلی ادامه پیدا می‌کند</p>
+          </div>
+          <button id="splitToggle" class="switch"><span class="knob"></span></button>
+        </div>
+        <div id="segmentCountRow" class="segment-count-row hidden">
+          <span class="hint-text small">تعداد پرامت‌ها:</span>
+          <div id="segmentCountButtons" class="segment-buttons"></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="toggle-row">
+          <div>
+            <p class="toggle-label">حفظ چهره‌های مرجع</p>
+            <p class="toggle-sub">هویت و چهره‌ی عکس‌های مرجع در تمام خروجی بدون تغییر باقی می‌ماند</p>
+          </div>
+          <button id="preserveFacesToggle" class="switch active"><span class="knob"></span></button>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="toggle-row">
+          <div>
+            <p class="toggle-label">دیالوگ</p>
+            <p id="dialogueSub" class="toggle-sub">خاموش — ویدیو بدون هیچ صحبت یا لب‌زدنی خواهد بود</p>
+          </div>
+          <button id="dialogueToggle" class="switch"><span class="knob"></span></button>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="toggle-row">
+          <div>
+            <p class="toggle-label">افزودن موزیک</p>
+            <p class="toggle-sub">یک بخش موزیک اختصاصی به پرامت اضافه می‌شود</p>
+          </div>
+          <button id="musicToggle" class="switch"><span class="knob"></span></button>
+        </div>
+        <input id="musicStyleInput" type="text" class="input hidden" placeholder="سبک موزیک دلخواه (اختیاری) — مثلاً: امبینت آرام، سینتی‌ویو، لوفای" />
+      </div>
+
+      <div id="errorBox" class="error-box hidden"></div>
+
+      <div class="action-row">
+        <button id="generateBtn" class="btn-primary">
+          <span class="rec-dot"></span> تولید پرامت
+        </button>
+        <button id="resetBtn" class="btn-icon" title="پاک‌سازی">↺</button>
+      </div>
+    </section>
+
+    <!-- RIGHT: Output -->
+    <section class="col output-col">
+      <div class="output-panel">
+        <div class="output-header">
+          <span class="output-title">🎥 پرامت نهایی</span>
+          <button id="copyAllBtn" class="btn-link hidden">کپی همه</button>
+        </div>
+        <div id="loadingBar" class="loading-bar hidden"></div>
+        <div class="output-body">
+          <span class="corner corner-tr"></span>
+          <span class="corner corner-tl"></span>
+          <span class="corner corner-br"></span>
+          <span class="corner corner-bl"></span>
+          <div id="outputContent">
+            <div class="placeholder">
+              <div class="placeholder-icon">🎞️</div>
+              <p>ایده و در صورت تمایل عکس مرجع را وارد کن، پرامت دقیق و کامل اینجا نمایش داده می‌شود.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- More options modal -->
+  <div id="moreModal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>گزینه‌های بیشتر</h2>
+        <button id="closeModalBtn" class="btn-icon-sm">✕</button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Feature list -->
+        <div id="moreFeatureList" class="feature-list">
+          <button class="feature-row" data-feature="panelVideoToPrompt">
+            <div class="feature-icon">🎥</div>
+            <div class="feature-row-text">
+              <p class="toggle-label">ویدیو → پرامت</p>
+              <p class="toggle-sub">یک ویدیو بده، پرامت کامل و دقیق همون ویدیو رو بگیر</p>
+            </div>
+            <span class="feature-chevron">‹</span>
+          </button>
+          <button class="feature-row" data-feature="panelLipsync">
+            <div class="feature-icon">🎵</div>
+            <div class="feature-row-text">
+              <p class="toggle-label">لیپ‌سینک و هماهنگی موزیک</p>
+              <p class="toggle-sub">پرامتی بساز که حرکت لب و اکشن دقیقاً با موزیک هماهنگ باشه</p>
+            </div>
+            <span class="feature-chevron">‹</span>
+          </button>
+          <button class="feature-row" data-feature="panelCharacterSwap">
+            <div class="feature-icon">🎭</div>
+            <div class="feature-row-text">
+              <p class="toggle-label">عوض کردن کاراکتر با عکس مرجع</p>
+              <p class="toggle-sub">کاراکتر یک ویدیو رو با فرد داخل عکس مرجع جایگزین کن</p>
+            </div>
+            <span class="feature-chevron">‹</span>
+          </button>
+        </div>
+
+        <!-- Panel: Video → Prompt -->
+        <div id="panelVideoToPrompt" class="feature-panel hidden">
+          <button class="btn-back" data-back>→ بازگشت</button>
+
+          <button id="videoFileBtn" class="btn-dashed">⬆ انتخاب فایل ویدیو</button>
+          <input id="videoFileInput" type="file" accept="video/*" hidden />
+
+          <div id="extractingIndicator" class="hint-text small hidden">⏳ در حال استخراج فریم‌ها از ویدیو...</div>
+          <div id="framesRow" class="chip-row"></div>
+          <div id="videoErrorBox" class="error-box hidden"></div>
+
+          <button id="analyzeVideoBtn" class="btn-secondary" disabled>استخراج پرامت کامل</button>
+
+          <div id="videoResultBox" class="segment-card hidden">
+            <div class="segment-header">
+              <span class="segment-title cyan">پرامت استخراج‌شده</span>
+              <button id="videoCopyBtn" class="btn-link">کپی</button>
+            </div>
+            <pre id="videoResultText" class="output-pre"></pre>
+          </div>
+        </div>
+
+        <!-- Panel: Lip-sync & Music -->
+        <div id="panelLipsync" class="feature-panel hidden">
+          <button class="btn-back" data-back>→ بازگشت</button>
+
+          <label class="field-label">عکس مرجع کاراکتر (اختیاری)</label>
+          <div id="lipsyncImageRow" class="chip-row"></div>
+          <input id="lipsyncImageInput" type="file" accept="image/*" hidden />
+
+          <label class="field-label">ویدیوی مرجع (اختیاری)</label>
+          <button id="lipsyncVideoBtn" class="btn-dashed">⬆ انتخاب فایل ویدیو</button>
+          <input id="lipsyncVideoInput" type="file" accept="video/*" hidden />
+          <div id="lipsyncVideoExtracting" class="hint-text small hidden">⏳ در حال استخراج فریم‌ها از ویدیو...</div>
+          <div id="lipsyncVideoFramesRow" class="chip-row"></div>
+
+          <label class="field-label">توضیح موزیک</label>
+          <input id="lipsyncMusicDesc" type="text" class="input" placeholder="مثلاً: پاپ ریتمیک و پرانرژی، تمپو تند" />
+
+          <label class="field-label">فایل موزیک (اختیاری — فقط با Gemini تحلیل می‌شود)</label>
+          <button id="lipsyncMusicFileBtn" class="btn-dashed">⬆ انتخاب فایل صوتی</button>
+          <input id="lipsyncMusicFileInput" type="file" accept="audio/*" hidden />
+
+          <label class="field-label">متن/لیریک برای هماهنگی لب (اختیاری)</label>
+          <textarea id="lipsyncLyrics" rows="3" placeholder="اگه می‌خوای لب‌ها دقیقاً با یه متن خاص هماهنگ بشه، اینجا بنویس..."></textarea>
+
+          <div id="lipsyncErrorBox" class="error-box hidden"></div>
+          <button id="lipsyncGenerateBtn" class="btn-secondary">تولید پرامت لیپ‌سینک</button>
+
+          <div id="lipsyncResultBox" class="segment-card hidden">
+            <div class="segment-header">
+              <span class="segment-title cyan">پرامت لیپ‌سینک</span>
+              <button id="lipsyncCopyBtn" class="btn-link">کپی</button>
+            </div>
+            <pre id="lipsyncResultText" class="output-pre"></pre>
+          </div>
+        </div>
+
+        <!-- Panel: Character Swap -->
+        <div id="panelCharacterSwap" class="feature-panel hidden">
+          <button class="btn-back" data-back>→ بازگشت</button>
+
+          <label class="field-label">ویدیوی اصلی</label>
+          <button id="swapVideoBtn" class="btn-dashed">⬆ انتخاب فایل ویدیو</button>
+          <input id="swapVideoInput" type="file" accept="video/*" hidden />
+          <div id="swapExtractingIndicator" class="hint-text small hidden">⏳ در حال استخراج فریم‌ها از ویدیو...</div>
+          <div id="swapFramesRow" class="chip-row"></div>
+
+          <label class="field-label">عکس مرجع کاراکتر جدید</label>
+          <div id="swapImageRow" class="chip-row"></div>
+          <input id="swapImageInput" type="file" accept="image/*" hidden />
+
+          <div id="swapErrorBox" class="error-box hidden"></div>
+          <button id="swapGenerateBtn" class="btn-secondary" disabled>تولید پرامت جایگزینی کاراکتر</button>
+
+          <div id="swapResultBox" class="segment-card hidden">
+            <div class="segment-header">
+              <span class="segment-title cyan">پرامت جایگزینی کاراکتر</span>
+              <button id="swapCopyBtn" class="btn-link">کپی</button>
+            </div>
+            <pre id="swapResultText" class="output-pre"></pre>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
