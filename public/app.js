@@ -34,7 +34,6 @@ const state = {
   provider: "gemini",
   splitEnabled: false,
   segmentCount: 3,
-  preserveFaces: true,
   hasDialogue: false,
   musicEnabled: false,
   musicStyle: "",
@@ -160,7 +159,7 @@ function buildSystemPrompt() {
   }
   sectionList.push("NEGATIVE / AVOID — artifacts, elements, or qualities to avoid (only include if the platform supports negative prompting; otherwise omit this section).");
 
-  const faceInstruction = state.preserveFaces
+  const faceInstruction = state.images.length > 0
     ? `\nIDENTITY LOCK: Reference images contain the exact face(s)/character identity that must appear in every scene or segment, unchanged. In the SUBJECT(S) section, explicitly lock the facial features, hairstyle, and distinguishing traits shown in the reference images, and state that identity must remain 100% consistent across the entire video with no drift in facial structure. If multiple reference images show the same person from different angles, treat them as one locked identity reference, not separate characters.`
     : "";
 
@@ -242,9 +241,7 @@ function buildAnalysisSystemPrompt() {
     "NEGATIVE / AVOID — artifacts or qualities to avoid when regenerating this footage.",
   ];
 
-  const faceInstruction = state.preserveFaces
-    ? "\nIDENTITY LOCK: If a person/face appears, describe their exact facial features, hairstyle, and distinguishing traits in the SUBJECT(S) section precisely, and state identity must remain fully consistent if regenerated."
-    : "";
+  const faceInstruction = "\nIDENTITY LOCK: If a person/face appears, describe their exact facial features, hairstyle, and distinguishing traits in the SUBJECT(S) section precisely, and state identity must remain fully consistent if regenerated.";
   const dialogueInstruction = !state.hasDialogue
     ? '\nNO DIALOGUE: Regardless of what is seen, instruct that the regenerated video must contain no spoken dialogue, no lip-sync, no on-screen text. Add "no dialogue, no lip-sync, no subtitles" to NEGATIVE / AVOID.'
     : "\nDIALOGUE ALLOWED: If any speech or lip movement is visible in the frames, transcribe or plausibly reconstruct short natural dialogue lines with speaker attribution in the ACTION & TIMELINE section, timed to match the footage.";
@@ -286,7 +283,6 @@ const providerGeminiBtn = $("providerGeminiBtn");
 const splitToggle = $("splitToggle");
 const segmentCountRow = $("segmentCountRow");
 const segmentCountButtons = $("segmentCountButtons");
-const preserveFacesToggle = $("preserveFacesToggle");
 const dialogueToggle = $("dialogueToggle");
 const dialogueSub = $("dialogueSub");
 const musicToggle = $("musicToggle");
@@ -468,11 +464,6 @@ segmentCountButtons.addEventListener("click", (e) => {
   [...segmentCountButtons.children].forEach((b) => b.classList.toggle("active", Number(b.dataset.n) === state.segmentCount));
 });
 
-preserveFacesToggle.addEventListener("click", () => {
-  state.preserveFaces = !state.preserveFaces;
-  setSwitch(preserveFacesToggle, state.preserveFaces);
-});
-
 dialogueToggle.addEventListener("click", () => {
   state.hasDialogue = !state.hasDialogue;
   setSwitch(dialogueToggle, state.hasDialogue);
@@ -593,7 +584,7 @@ generateBtn.addEventListener("click", async () => {
     if (combinedStyle) userText += `\nیادداشت سبک/جزییات اضافه: ${combinedStyle}`;
     if (state.images.length > 0) {
       userText += `\n\n(${state.images.length} تصویر مرجع پیوست شده — از آن‌ها برای الهام گرفتن سبک، موضوع یا ترکیب‌بندی استفاده کن.)`;
-      if (state.preserveFaces) userText += " چهره/هویت نشان داده‌شده در تصاویر باید بدون تغییر در تمام خروجی حفظ شود.";
+      userText += " چهره/هویت نشان داده‌شده در تصاویر باید بدون تغییر در تمام خروجی حفظ شود.";
     }
     if (state.splitEnabled) userText += `\n\nخروجی را به ${state.segmentCount} پرامت متوالی تقسیم کن که هرکدام از فریم پایانی قبلی ادامه پیدا کنند.`;
     if (!state.hasDialogue) userText += "\nهیچ دیالوگ یا صحبتی در ویدیو نباشد.";
@@ -626,6 +617,7 @@ resetBtn.addEventListener("click", () => {
   renderImages();
   renderStylePresets();
   renderResult();
+  saveDraft();
 });
 
 // ---------- More modal: navigation between feature list and panels ----------
@@ -1107,7 +1099,6 @@ function saveDraft() {
       provider: state.provider,
       splitEnabled: state.splitEnabled,
       segmentCount: state.segmentCount,
-      preserveFaces: state.preserveFaces,
       hasDialogue: state.hasDialogue,
       musicEnabled: state.musicEnabled,
       selectedPreset: state.selectedPreset,
@@ -1137,7 +1128,6 @@ function loadDraft() {
     state.provider = draft.provider || state.provider;
     state.splitEnabled = !!draft.splitEnabled;
     state.segmentCount = draft.segmentCount || state.segmentCount;
-    state.preserveFaces = draft.preserveFaces !== undefined ? draft.preserveFaces : state.preserveFaces;
     state.hasDialogue = !!draft.hasDialogue;
     state.musicEnabled = !!draft.musicEnabled;
     state.selectedPreset = draft.selectedPreset || null;
@@ -1159,8 +1149,6 @@ function loadDraft() {
 function syncUIFromState() {
   setSwitch(splitToggle, state.splitEnabled);
   segmentCountRow.classList.toggle("hidden", !state.splitEnabled);
-
-  setSwitch(preserveFacesToggle, state.preserveFaces);
 
   setSwitch(dialogueToggle, state.hasDialogue);
   dialogueSub.textContent = state.hasDialogue
