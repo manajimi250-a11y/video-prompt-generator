@@ -33,7 +33,7 @@ const state = {
   outputLang: "en",
   provider: "gemini",
   splitEnabled: false,
-  segmentCount: 2,
+  segmentCount: 3,
   preserveFaces: true,
   hasDialogue: false,
   musicEnabled: false,
@@ -119,11 +119,11 @@ function extractVideoFrames(file, frameCount = 4) {
   });
 }
 
-async function callAI(system, messages) {
+async function callAI(system, messages, maxTokens = 1500) {
   const res = await fetch("/api/generate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ provider: state.provider, system, messages, max_tokens: 1000 }),
+    body: JSON.stringify({ provider: state.provider, system, messages, max_tokens: maxTokens }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || "خطا در ارتباط با سرور");
@@ -282,6 +282,8 @@ const langFaBtn = $("langFaBtn");
 const providerClaudeBtn = $("providerClaudeBtn");
 const providerGeminiBtn = $("providerGeminiBtn");
 const splitToggle = $("splitToggle");
+const segmentCountRow = $("segmentCountRow");
+const segmentCountButtons = $("segmentCountButtons");
 const preserveFacesToggle = $("preserveFacesToggle");
 const dialogueToggle = $("dialogueToggle");
 const dialogueSub = $("dialogueSub");
@@ -335,7 +337,6 @@ const swapResultBox = $("swapResultBox");
 const swapResultText = $("swapResultText");
 const swapCopyBtn = $("swapCopyBtn");
 
-const titlesTopicInput = $("titlesTopicInput");
 const titlesErrorBox = $("titlesErrorBox");
 const titlesGenerateBtn = $("titlesGenerateBtn");
 const titlesResultBox = $("titlesResultBox");
@@ -352,6 +353,10 @@ function initSelects() {
 
   durationSelect.innerHTML = DURATIONS.map((d) => `<option value="${d}">${d}</option>`).join("");
   durationSelect.value = state.duration;
+
+  segmentCountButtons.innerHTML = [2, 3, 4, 5, 6]
+    .map((n) => `<button class="segment-btn${n === state.segmentCount ? " active" : ""}" data-n="${n}">${n}</button>`)
+    .join("");
 }
 
 function renderStylePresets() {
@@ -452,6 +457,13 @@ imageInput.addEventListener("change", async (e) => {
 splitToggle.addEventListener("click", () => {
   state.splitEnabled = !state.splitEnabled;
   setSwitch(splitToggle, state.splitEnabled);
+  segmentCountRow.classList.toggle("hidden", !state.splitEnabled);
+});
+segmentCountButtons.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-n]");
+  if (!btn) return;
+  state.segmentCount = Number(btn.dataset.n);
+  [...segmentCountButtons.children].forEach((b) => b.classList.toggle("active", Number(b.dataset.n) === state.segmentCount));
 });
 
 preserveFacesToggle.addEventListener("click", () => {
@@ -588,7 +600,8 @@ generateBtn.addEventListener("click", async () => {
 
     contentBlocks.push({ type: "text", text: userText });
 
-    const text = await callAI(buildSystemPrompt(), [{ role: "user", content: contentBlocks }]);
+    const maxTokens = state.splitEnabled ? 700 * state.segmentCount + 500 : 1500;
+    const text = await callAI(buildSystemPrompt(), [{ role: "user", content: contentBlocks }], maxTokens);
     state.result = text;
   } catch (e) {
     showError("تولید پرامت ناموفق بود. لطفاً دوباره تلاش کنید.");
@@ -673,10 +686,6 @@ function closeModal() {
   swapErrorBox.classList.add("hidden");
   swapResultBox.classList.add("hidden");
   swapGenerateBtn.disabled = true;
-
-  titlesTopicInput.value = "";
-  titlesErrorBox.classList.add("hidden");
-  titlesResultBox.classList.add("hidden");
 }
 
 videoFileBtn.addEventListener("click", () => videoFileInput.click());
@@ -1050,9 +1059,9 @@ Do not add any preamble, explanation, or markdown formatting like asterisks. Jus
 }
 
 titlesGenerateBtn.addEventListener("click", async () => {
-  const topic = titlesTopicInput.value.trim() || ideaInput.value.trim();
+  const topic = ideaInput.value.trim();
   if (!topic) {
-    titlesErrorBox.textContent = "لطفاً موضوع یا ایده‌ی ویدیو را بنویس.";
+    titlesErrorBox.textContent = "لطفاً اول ایده‌ی کلی ویدیو رو بالای صفحه بنویس.";
     titlesErrorBox.classList.remove("hidden");
     return;
   }

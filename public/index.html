@@ -80,10 +80,14 @@
 
         <div class="toggle-row">
           <div>
-            <p class="toggle-label">تقسیم به ۲ پرامت متوالی</p>
-            <p class="toggle-sub">برای ویدیوهای طولانی‌تر، پرامت دوم از فریم پایانی پرامت اول ادامه پیدا می‌کند</p>
+            <p class="toggle-label">تقسیم به چند پرامت متوالی</p>
+            <p class="toggle-sub">برای ویدیوهای طولانی‌تر، هر پرامت از فریم پایانی پرامت قبلی ادامه پیدا می‌کند</p>
           </div>
           <button id="splitToggle" class="switch"><span class="knob"></span></button>
+        </div>
+        <div id="segmentCountRow" class="segment-count-row hidden">
+          <span class="hint-text small">تعداد پرامت‌ها:</span>
+          <div id="segmentCountButtons" class="segment-buttons"></div>
         </div>
 
         <div class="divider"></div>
@@ -116,6 +120,22 @@
           <button id="musicToggle" class="switch"><span class="knob"></span></button>
         </div>
         <input id="musicStyleInput" type="text" class="input hidden" placeholder="سبک موزیک دلخواه (اختیاری) — مثلاً: امبینت آرام، سینتی‌ویو، لوفای" />
+      </div>
+
+      <div class="card">
+        <div class="row-between">
+          <label class="field-label" style="margin-bottom:0">🔥 عنوان و هشتگ وایرال</label>
+        </div>
+        <p class="hint-text" style="margin-top:6px">از همون ایده‌ی بالا، چند تیتر جذاب و کاربرپسند + هشتگ انگلیسی می‌سازه.</p>
+        <div id="titlesErrorBox" class="error-box hidden" style="margin-top:10px"></div>
+        <button id="titlesGenerateBtn" class="btn-secondary" style="margin-top:10px">تولید عنوان و هشتگ</button>
+        <div id="titlesResultBox" class="segment-card hidden" style="margin-top:12px">
+          <div class="segment-header">
+            <span class="segment-title cyan">عنوان‌ها و هشتگ‌ها</span>
+            <button id="titlesCopyBtn" class="btn-link">کپی</button>
+          </div>
+          <pre id="titlesResultText" class="output-pre"></pre>
+        </div>
       </div>
 
       <div id="errorBox" class="error-box hidden"></div>
@@ -184,14 +204,6 @@
             <div class="feature-row-text">
               <p class="toggle-label">عوض کردن کاراکتر با عکس مرجع</p>
               <p class="toggle-sub">کاراکتر یک ویدیو رو با فرد داخل عکس مرجع جایگزین کن</p>
-            </div>
-            <span class="feature-chevron">‹</span>
-          </button>
-          <button class="feature-row" data-feature="panelTitles">
-            <div class="feature-icon">🔥</div>
-            <div class="feature-row-text">
-              <p class="toggle-label">عنوان و هشتگ وایرال</p>
-              <p class="toggle-sub">چند تیتر جذاب و کاربرپسند + هشتگ انگلیسی برای ویدیو بساز</p>
             </div>
             <span class="feature-chevron">‹</span>
           </button>
@@ -279,26 +291,6 @@
               <button id="swapCopyBtn" class="btn-link">کپی</button>
             </div>
             <pre id="swapResultText" class="output-pre"></pre>
-          </div>
-        </div>
-
-        <!-- Panel: Viral Titles & Hashtags -->
-        <div id="panelTitles" class="feature-panel hidden">
-          <button class="btn-back" data-back>→ بازگشت</button>
-          <p class="hint-text">موضوع ویدیو رو بنویس، چند تیتر وایرال و کاربرپسند + هشتگ انگلیسی می‌گیری.</p>
-
-          <label class="field-label">موضوع / ایده ویدیو</label>
-          <textarea id="titlesTopicInput" rows="3" placeholder="مثلاً: ویدیوی طنز درباره یک سگ که غذای صاحبش رو می‌دزده"></textarea>
-
-          <div id="titlesErrorBox" class="error-box hidden"></div>
-          <button id="titlesGenerateBtn" class="btn-secondary">تولید عنوان و هشتگ</button>
-
-          <div id="titlesResultBox" class="segment-card hidden">
-            <div class="segment-header">
-              <span class="segment-title cyan">عنوان‌ها و هشتگ‌ها</span>
-              <button id="titlesCopyBtn" class="btn-link">کپی</button>
-            </div>
-            <pre id="titlesResultText" class="output-pre"></pre>
           </div>
         </div>
 
