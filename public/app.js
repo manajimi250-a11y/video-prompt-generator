@@ -230,15 +230,15 @@ function buildAnalysisSystemPrompt() {
 
   const sectionList = [
     "LOGLINE — one vivid sentence capturing the whole shot/scene.",
-    "SCENE & SETTING — location, time of day, environment detail, set dressing.",
-    "SUBJECT(S) — who/what is in frame, appearance, wardrobe, expression.",
-    "ACTION & TIMELINE — what happens across the clip, described as continuous motion inferred from the sequence of frames.",
-    "CAMERA — shot type, framing, lens feel, camera movement, depth of field.",
-    "LIGHTING & COLOR — light sources, direction, color grade, contrast, mood of the palette.",
-    "ATMOSPHERE & STYLE — overall mood, genre/film reference touchstones, texture (film grain, digital clean, anamorphic, etc).",
+    "SCENE & SETTING — exact location type, time of day, weather/season cues, background elements, set dressing, textures and materials visible.",
+    "SUBJECT(S) — every person/animal/object in frame: precise physical description (build, age range, hair, clothing down to color/fabric/fit), pose, expression, and how these change frame-to-frame.",
+    "ACTION & TIMELINE — break the clip into a beginning/middle/end. Describe exactly how each subject moves and how the scene evolves between every consecutive frame pair — speed of motion, direction, any interaction between subjects or with objects.",
+    "CAMERA — shot type (wide/medium/close-up/extreme close-up), framing and composition, apparent lens (wide-angle/normal/telephoto feel), any camera movement inferred from framing shifts across frames (pan/tilt/dolly/zoom/handheld shake/static), depth of field and what's in/out of focus.",
+    "LIGHTING & COLOR — direction and hardness of light, visible shadows, practical light sources in frame, overall color grade/palette, contrast level, any color shifts across the frames.",
+    "ATMOSPHERE & STYLE — overall mood, genre/film reference touchstones, texture (film grain, digital clean, anamorphic flares, etc), any visible artifacts or stylistic choices.",
     state.musicEnabled
-      ? "MUSIC — plausible genre, instrumentation, tempo/BPM feel matching the footage's energy."
-      : "AUDIO NOTES — plausible ambient/diegetic sound cues matching the footage.",
+      ? "MUSIC — plausible genre, instrumentation, tempo/BPM feel matching the footage's energy and pacing."
+      : "AUDIO NOTES — plausible ambient/diegetic sound cues matching exactly what is visually happening (footsteps, wind, traffic, etc).",
     "NEGATIVE / AVOID — artifacts or qualities to avoid when regenerating this footage.",
   ];
 
@@ -251,11 +251,13 @@ function buildAnalysisSystemPrompt() {
 
   const platformLabel = PLATFORMS.find((p) => p.id === state.platform)?.label;
 
-  return `You are an elite AI video-generation prompt engineer specializing in reverse-engineering prompts from real footage. You are given ${state.extractedFrames.length} frames extracted in chronological order (start to end) from an actual video clip. Your job is to write the exact detailed prompt that, if given to a text-to-video AI model (target platform: ${platformLabel}, aspect ratio ${state.aspect}), would regenerate this same footage as closely as possible.
+  return `You are an elite AI video-generation prompt engineer specializing in reverse-engineering EXTREMELY detailed, high-fidelity prompts from real footage. You are given ${state.extractedFrames.length} frames extracted in chronological order (start to end) from an actual video clip. Your job is to write the exact detailed prompt that, if given to a text-to-video AI model (target platform: ${platformLabel}, aspect ratio ${state.aspect}), would regenerate this same footage as closely as possible.
+
+CRITICAL — examine every single one of the ${state.extractedFrames.length} frames individually and compare each to its neighbors before writing anything. Do not summarize only the first frame or write generic filler. Every section must contain specific, concrete, visually-grounded detail pulled directly from what is actually visible across the frames — colors, textures, exact positioning, precise motion — never vague placeholders like "a person walks" without describing exactly how, wearing what, where, and against what background. This output should be noticeably richer and more detailed than a short generic caption; aim for the level of detail a professional cinematographer's shot notes would contain.
 
 Only describe what is visible or strongly implied by comparing the frames — do not invent unrelated plot details. Infer the motion happening between frames as smooth continuous action.
 
-Structure the output with these exact uppercase section labels, each followed by flowing descriptive detail:
+Structure the output with these exact uppercase section labels, each followed by flowing, richly detailed descriptive text (multiple full sentences per section, not single fragments):
 
 ${sectionList.join("\n")}
 ${faceInstruction}${dialogueInstruction}
@@ -704,7 +706,7 @@ videoFileInput.addEventListener("change", async (e) => {
   analyzeVideoBtn.disabled = true;
 
   try {
-    const frames = await extractVideoFrames(file, 4);
+    const frames = await extractVideoFrames(file, 8);
     state.extractedFrames = frames;
     framesRow.innerHTML = frames.map((f) => `<img class="frame-thumb" src="${f.dataUrl}" alt="" />`).join("");
     analyzeVideoBtn.disabled = false;
@@ -734,7 +736,7 @@ analyzeVideoBtn.addEventListener("click", async () => {
       text: `این ${state.extractedFrames.length} فریم به ترتیب زمانی از یک ویدیوی واقعی استخراج شده‌اند. پرامت کامل و دقیقی بنویس که همین ویدیو را بازتولید کند.`,
     });
 
-    const text = await callAI(buildAnalysisSystemPrompt(), [{ role: "user", content: contentBlocks }]);
+    const text = await callAI(buildAnalysisSystemPrompt(), [{ role: "user", content: contentBlocks }], 2200);
     state.videoResult = text;
     videoResultText.textContent = text;
     videoResultBox.classList.remove("hidden");
@@ -864,7 +866,7 @@ lipsyncGenerateBtn.addEventListener("click", async () => {
     if (state.lipsyncMusicFile) userText += `\n\n(یک فایل موزیک واقعی پیوست شده — به تمپو و ریتم واقعیش گوش بده.)`;
     contentBlocks.push({ type: "text", text: userText });
 
-    const text = await callAI(buildLipsyncSystemPrompt(), [{ role: "user", content: contentBlocks }]);
+    const text = await callAI(buildLipsyncSystemPrompt(), [{ role: "user", content: contentBlocks }], 1800);
     lipsyncResultText.textContent = text;
     lipsyncResultBox.classList.remove("hidden");
   } catch (err) {
@@ -889,7 +891,7 @@ lipsyncVideoInput.addEventListener("change", async (e) => {
   lipsyncVideoExtracting.classList.remove("hidden");
 
   try {
-    const frames = await extractVideoFrames(file, 4);
+    const frames = await extractVideoFrames(file, 8);
     state.lipsyncVideoFrames = frames;
     lipsyncVideoFramesRow.innerHTML = frames.map((f) => `<img class="frame-thumb" src="${f.dataUrl}" alt="" />`).join("");
   } catch (err) {
@@ -969,7 +971,7 @@ swapVideoInput.addEventListener("change", async (e) => {
   updateSwapButtonState();
 
   try {
-    const frames = await extractVideoFrames(file, 4);
+    const frames = await extractVideoFrames(file, 8);
     state.swapVideoFrames = frames;
     swapFramesRow.innerHTML = frames.map((f) => `<img class="frame-thumb" src="${f.dataUrl}" alt="" />`).join("");
   } catch (err) {
@@ -1029,7 +1031,7 @@ swapGenerateBtn.addEventListener("click", async () => {
       text: `اولین تصاویر، فریم‌های ویدیوی اصلی هستند (به ترتیب زمانی). آخرین تصویر، عکس مرجع کاراکتر جدیده. پرامتی بساز که همون ویدیوی اصلی رو دقیقاً با این کاراکتر جدید بازتولید کنه.`,
     });
 
-    const text = await callAI(buildCharacterSwapSystemPrompt(), [{ role: "user", content: contentBlocks }]);
+    const text = await callAI(buildCharacterSwapSystemPrompt(), [{ role: "user", content: contentBlocks }], 2000);
     swapResultText.textContent = text;
     swapResultBox.classList.remove("hidden");
   } catch (err) {
@@ -1089,10 +1091,114 @@ titlesCopyBtn.addEventListener("click", () => {
   navigator.clipboard.writeText(titlesResultText.textContent).then(() => flashCopied(titlesCopyBtn));
 });
 
+// ---------- Auto-save draft (so work isn't lost when switching apps) ----------
+const DRAFT_KEY = "video-prompt-draft-v1";
+
+function saveDraft() {
+  try {
+    const draft = {
+      idea: ideaInput.value,
+      styleNotes: styleNotesInput.value,
+      musicStyle: musicStyleInput.value,
+      platform: state.platform,
+      aspect: state.aspect,
+      duration: state.duration,
+      outputLang: state.outputLang,
+      provider: state.provider,
+      splitEnabled: state.splitEnabled,
+      segmentCount: state.segmentCount,
+      preserveFaces: state.preserveFaces,
+      hasDialogue: state.hasDialogue,
+      musicEnabled: state.musicEnabled,
+      selectedPreset: state.selectedPreset,
+      images: state.images.map((img) => ({ base64: img.base64, mediaType: img.mediaType })),
+      result: state.result,
+    };
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+  } catch (e) {
+    // storage full or unavailable — not critical, skip silently
+  }
+}
+
+function loadDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return;
+    const draft = JSON.parse(raw);
+
+    ideaInput.value = draft.idea || "";
+    styleNotesInput.value = draft.styleNotes || "";
+    musicStyleInput.value = draft.musicStyle || "";
+
+    state.platform = draft.platform || state.platform;
+    state.aspect = draft.aspect || state.aspect;
+    state.duration = draft.duration || state.duration;
+    state.outputLang = draft.outputLang || state.outputLang;
+    state.provider = draft.provider || state.provider;
+    state.splitEnabled = !!draft.splitEnabled;
+    state.segmentCount = draft.segmentCount || state.segmentCount;
+    state.preserveFaces = draft.preserveFaces !== undefined ? draft.preserveFaces : state.preserveFaces;
+    state.hasDialogue = !!draft.hasDialogue;
+    state.musicEnabled = !!draft.musicEnabled;
+    state.selectedPreset = draft.selectedPreset || null;
+    state.result = draft.result || "";
+
+    if (Array.isArray(draft.images)) {
+      state.images = draft.images.map((img) => ({
+        id: Math.random().toString(36).slice(2),
+        base64: img.base64,
+        mediaType: img.mediaType,
+        previewUrl: `data:${img.mediaType};base64,${img.base64}`,
+      }));
+    }
+  } catch (e) {
+    // corrupted draft — ignore and start fresh
+  }
+}
+
+function syncUIFromState() {
+  setSwitch(splitToggle, state.splitEnabled);
+  segmentCountRow.classList.toggle("hidden", !state.splitEnabled);
+
+  setSwitch(preserveFacesToggle, state.preserveFaces);
+
+  setSwitch(dialogueToggle, state.hasDialogue);
+  dialogueSub.textContent = state.hasDialogue
+    ? "روشن — شخصیت‌ها می‌توانند صحبت کنند"
+    : "خاموش — ویدیو بدون هیچ صحبت یا لب‌زدنی خواهد بود";
+
+  setSwitch(musicToggle, state.musicEnabled);
+  musicStyleInput.classList.toggle("hidden", !state.musicEnabled);
+
+  if (state.outputLang === "fa") {
+    langFaBtn.classList.add("active");
+    langEnBtn.classList.remove("active");
+  } else {
+    langEnBtn.classList.add("active");
+    langFaBtn.classList.remove("active");
+  }
+
+  if (state.provider === "gemini") {
+    providerGeminiBtn.classList.add("active");
+    providerClaudeBtn.classList.remove("active");
+  } else {
+    providerClaudeBtn.classList.add("active");
+    providerGeminiBtn.classList.remove("active");
+  }
+}
+
 // ---------- Init ----------
+loadDraft();
 initSelects();
+syncUIFromState();
 renderStylePresets();
 renderImages();
 renderResult();
 renderLipsyncImage();
 renderSwapImage();
+
+setInterval(saveDraft, 2000);
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) saveDraft();
+});
+window.addEventListener("pagehide", saveDraft);
