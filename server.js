@@ -78,7 +78,7 @@ async function handleGemini(system, messages, max_tokens) {
     contents: toGeminiContents(messages),
     generationConfig: { maxOutputTokens: max_tokens || 1000 },
   };
-  if (system) body.system_instruction = { parts: [{ text: system }] };
+  if (system) body.systemInstruction = { parts: [{ text: system }] };
 
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
