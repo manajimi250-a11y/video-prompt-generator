@@ -1119,6 +1119,7 @@ function loadDraft() {
 
     ideaInput.value = draft.idea || "";
     styleNotesInput.value = draft.styleNotes || "";
+    state.idea = draft.idea || "";
     musicStyleInput.value = draft.musicStyle || "";
 
     state.platform = draft.platform || state.platform;

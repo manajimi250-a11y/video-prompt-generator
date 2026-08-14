@@ -4,7 +4,14 @@ const path = require("path");
 
 const app = express();
 app.use(express.json({ limit: "30mb" }));
-app.use(express.static(path.join(__dirname, "public")));
+app.use(
+  express.static(path.join(__dirname, "public"), {
+    setHeaders: (res) => {
+      // Always fetch the latest HTML/CSS/JS so updates show up immediately after each deploy
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    },
+  })
+);
 
 async function handleAnthropic(system, messages, max_tokens) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -66,7 +73,7 @@ async function handleGemini(system, messages, max_tokens) {
     throw err;
   }
 
-  const model = process.env.GEMINI_MODEL || "gemini-3.5-flash-lite";
+  const model = process.env.GEMINI_MODEL || "gemini-3.6-flash";
   const body = {
     contents: toGeminiContents(messages),
     generationConfig: { maxOutputTokens: max_tokens || 1000 },
@@ -110,10 +117,20 @@ app.post("/api/generate", async (req, res) => {
       return res.status(400).json({ error: "درخواست نامعتبر است." });
     }
 
+    // Diagnostic logging — visible in Render's Logs tab
+    const lastMsg = messages[messages.length - 1];
+    const textBlock = Array.isArray(lastMsg?.content)
+      ? lastMsg.content.find((b) => b.type === "text")?.text
+      : lastMsg?.content;
+    console.log(`[${new Date().toISOString()}] provider=${provider} userText="${(textBlock || "").slice(0, 120)}"`);
+
     const data =
       provider === "gemini"
         ? await handleGemini(system, messages, max_tokens)
         : await handleAnthropic(system, messages, max_tokens);
+
+    const resultPreview = data?.content?.[0]?.text?.slice(0, 120) || "";
+    console.log(`[${new Date().toISOString()}] result preview: "${resultPreview}"`);
 
     res.json(data);
   } catch (err) {
