@@ -75,6 +75,15 @@ body {
   object-fit: cover;
   display: block;
 }
+.header-banner {
+  flex: 1;
+  height: 56px;
+  width: auto;
+  max-width: 260px;
+  object-fit: contain;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(212, 175, 90, 0.25);
+}
 .header-text { flex: 1; min-width: 0; }
 .header-text h1 {
   font-family: 'Syne', 'Vazirmatn', sans-serif;
