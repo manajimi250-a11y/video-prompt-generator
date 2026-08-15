@@ -280,7 +280,6 @@ const langEnBtn = $("langEnBtn");
 const langFaBtn = $("langFaBtn");
 const providerClaudeBtn = $("providerClaudeBtn");
 const providerGeminiBtn = $("providerGeminiBtn");
-const providerZaiBtn = $("providerZaiBtn");
 const splitToggle = $("splitToggle");
 const segmentCountRow = $("segmentCountRow");
 const segmentCountButtons = $("segmentCountButtons");
@@ -419,19 +418,11 @@ providerClaudeBtn.addEventListener("click", () => {
   state.provider = "anthropic";
   providerClaudeBtn.classList.add("active");
   providerGeminiBtn.classList.remove("active");
-  providerZaiBtn.classList.remove("active");
 });
 providerGeminiBtn.addEventListener("click", () => {
   state.provider = "gemini";
   providerGeminiBtn.classList.add("active");
   providerClaudeBtn.classList.remove("active");
-  providerZaiBtn.classList.remove("active");
-});
-providerZaiBtn.addEventListener("click", () => {
-  state.provider = "zai";
-  providerZaiBtn.classList.add("active");
-  providerClaudeBtn.classList.remove("active");
-  providerGeminiBtn.classList.remove("active");
 });
 
 stylePresetsRow.addEventListener("click", (e) => {
@@ -570,10 +561,6 @@ copyAllBtn.addEventListener("click", () => {
 generateBtn.addEventListener("click", async () => {
   if (!state.idea.trim()) {
     showError("لطفاً ابتدا ایده کلی ویدیو را بنویسید.");
-    return;
-  }
-  if (state.provider === "zai" && state.images.length > 0) {
-    showError("Z.ai از عکس مرجع پشتیبانی نمی‌کند. عکس‌ها را حذف کن یا Gemini/Claude را انتخاب کن.");
     return;
   }
   clearError();
@@ -1180,9 +1167,13 @@ function syncUIFromState() {
     langFaBtn.classList.remove("active");
   }
 
-  providerClaudeBtn.classList.toggle("active", state.provider === "anthropic");
-  providerGeminiBtn.classList.toggle("active", state.provider === "gemini");
-  providerZaiBtn.classList.toggle("active", state.provider === "zai");
+  if (state.provider === "gemini") {
+    providerGeminiBtn.classList.add("active");
+    providerClaudeBtn.classList.remove("active");
+  } else {
+    providerClaudeBtn.classList.add("active");
+    providerGeminiBtn.classList.remove("active");
+  }
 }
 
 // ---------- Init ----------
