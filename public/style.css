@@ -185,7 +185,7 @@ textarea::placeholder, .input::placeholder { color: var(--text-dim); }
   box-shadow: 0 3px 12px rgba(196, 176, 255, 0.4);
 }
 
-.lang-row { display: flex; align-items: center; gap: 6px; margin-top: 4px; margin-bottom: 4px; }
+.lang-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 4px; margin-bottom: 4px; }
 
 /* ---------- Filmstrip / images ---------- */
 .filmstrip .thumb {

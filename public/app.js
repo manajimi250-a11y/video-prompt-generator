@@ -118,7 +118,7 @@ function extractVideoFrames(file, frameCount = 4) {
   });
 }
 
-async function callAI(system, messages, maxTokens = 1500) {
+async function callAI(system, messages, maxTokens = 2000) {
   const res = await fetch("/api/generate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -280,6 +280,7 @@ const langEnBtn = $("langEnBtn");
 const langFaBtn = $("langFaBtn");
 const providerClaudeBtn = $("providerClaudeBtn");
 const providerGeminiBtn = $("providerGeminiBtn");
+const providerZaiBtn = $("providerZaiBtn");
 const splitToggle = $("splitToggle");
 const segmentCountRow = $("segmentCountRow");
 const segmentCountButtons = $("segmentCountButtons");
@@ -418,11 +419,19 @@ providerClaudeBtn.addEventListener("click", () => {
   state.provider = "anthropic";
   providerClaudeBtn.classList.add("active");
   providerGeminiBtn.classList.remove("active");
+  providerZaiBtn.classList.remove("active");
 });
 providerGeminiBtn.addEventListener("click", () => {
   state.provider = "gemini";
   providerGeminiBtn.classList.add("active");
   providerClaudeBtn.classList.remove("active");
+  providerZaiBtn.classList.remove("active");
+});
+providerZaiBtn.addEventListener("click", () => {
+  state.provider = "zai";
+  providerZaiBtn.classList.add("active");
+  providerClaudeBtn.classList.remove("active");
+  providerGeminiBtn.classList.remove("active");
 });
 
 stylePresetsRow.addEventListener("click", (e) => {
@@ -563,6 +572,10 @@ generateBtn.addEventListener("click", async () => {
     showError("لطفاً ابتدا ایده کلی ویدیو را بنویسید.");
     return;
   }
+  if (state.provider === "zai" && state.images.length > 0) {
+    showError("Z.ai از عکس مرجع پشتیبانی نمی‌کند. عکس‌ها را حذف کن یا Gemini/Claude را انتخاب کن.");
+    return;
+  }
   clearError();
   state.loading = true;
   state.result = "";
@@ -593,7 +606,7 @@ generateBtn.addEventListener("click", async () => {
 
     contentBlocks.push({ type: "text", text: userText });
 
-    const maxTokens = state.splitEnabled ? 700 * state.segmentCount + 500 : 1500;
+    const maxTokens = state.splitEnabled ? 900 * state.segmentCount + 700 : 2000;
     const text = await callAI(buildSystemPrompt(), [{ role: "user", content: contentBlocks }], maxTokens);
     state.result = text;
   } catch (e) {
@@ -728,7 +741,7 @@ analyzeVideoBtn.addEventListener("click", async () => {
       text: `این ${state.extractedFrames.length} فریم به ترتیب زمانی از یک ویدیوی واقعی استخراج شده‌اند. پرامت کامل و دقیقی بنویس که همین ویدیو را بازتولید کند.`,
     });
 
-    const text = await callAI(buildAnalysisSystemPrompt(), [{ role: "user", content: contentBlocks }], 2200);
+    const text = await callAI(buildAnalysisSystemPrompt(), [{ role: "user", content: contentBlocks }], 2800);
     state.videoResult = text;
     videoResultText.textContent = text;
     videoResultBox.classList.remove("hidden");
@@ -858,7 +871,7 @@ lipsyncGenerateBtn.addEventListener("click", async () => {
     if (state.lipsyncMusicFile) userText += `\n\n(یک فایل موزیک واقعی پیوست شده — به تمپو و ریتم واقعیش گوش بده.)`;
     contentBlocks.push({ type: "text", text: userText });
 
-    const text = await callAI(buildLipsyncSystemPrompt(), [{ role: "user", content: contentBlocks }], 1800);
+    const text = await callAI(buildLipsyncSystemPrompt(), [{ role: "user", content: contentBlocks }], 2400);
     lipsyncResultText.textContent = text;
     lipsyncResultBox.classList.remove("hidden");
   } catch (err) {
@@ -1023,7 +1036,7 @@ swapGenerateBtn.addEventListener("click", async () => {
       text: `اولین تصاویر، فریم‌های ویدیوی اصلی هستند (به ترتیب زمانی). آخرین تصویر، عکس مرجع کاراکتر جدیده. پرامتی بساز که همون ویدیوی اصلی رو دقیقاً با این کاراکتر جدید بازتولید کنه.`,
     });
 
-    const text = await callAI(buildCharacterSwapSystemPrompt(), [{ role: "user", content: contentBlocks }], 2000);
+    const text = await callAI(buildCharacterSwapSystemPrompt(), [{ role: "user", content: contentBlocks }], 2600);
     swapResultText.textContent = text;
     swapResultBox.classList.remove("hidden");
   } catch (err) {
@@ -1167,13 +1180,9 @@ function syncUIFromState() {
     langFaBtn.classList.remove("active");
   }
 
-  if (state.provider === "gemini") {
-    providerGeminiBtn.classList.add("active");
-    providerClaudeBtn.classList.remove("active");
-  } else {
-    providerClaudeBtn.classList.add("active");
-    providerGeminiBtn.classList.remove("active");
-  }
+  providerClaudeBtn.classList.toggle("active", state.provider === "anthropic");
+  providerGeminiBtn.classList.toggle("active", state.provider === "gemini");
+  providerZaiBtn.classList.toggle("active", state.provider === "zai");
 }
 
 // ---------- Init ----------
