@@ -109,7 +109,59 @@ async function handleGemini(system, messages, max_tokens) {
   return { content: [{ type: "text", text }] };
 }
 
-// یک مسیر واحد که هم Claude و هم Gemini از آن عبور می‌کنند
+async function handleZai(system, messages, max_tokens) {
+  const apiKey = process.env.ZAI_API_KEY;
+  if (!apiKey) {
+    const err = new Error("ZAI_API_KEY تنظیم نشده. فایل .env را بررسی کن.");
+    err.status = 500;
+    throw err;
+  }
+
+  // مدل‌های رایگان Z.ai (GLM-4.5/4.7-Flash) فقط متنی‌اند — عکس/صدا پشتیبانی نمی‌شود
+  const hasMedia = messages.some(
+    (m) => Array.isArray(m.content) && m.content.some((b) => b.type === "image" || b.type === "audio")
+  );
+  if (hasMedia) {
+    const err = new Error("مدل رایگان Z.ai از عکس یا ویدیو پشتیبانی نمی‌کند. لطفاً برای این بخش Gemini یا Claude را انتخاب کن.");
+    err.status = 400;
+    throw err;
+  }
+
+  const model = process.env.ZAI_MODEL || "glm-4.7-flash";
+  const openaiMessages = [];
+  if (system) openaiMessages.push({ role: "system", content: system });
+  messages.forEach((m) => {
+    const text = Array.isArray(m.content)
+      ? m.content.map((b) => b.text).filter(Boolean).join("\n")
+      : m.content;
+    openaiMessages.push({ role: m.role === "assistant" ? "assistant" : "user", content: text });
+  });
+
+  const response = await fetch("https://api.z.ai/api/paas/v4/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages: openaiMessages,
+      max_tokens: max_tokens || 1000,
+    }),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    const err = new Error(data?.error?.message || "خطا در ارتباط با Z.ai API");
+    err.status = response.status;
+    throw err;
+  }
+
+  const text = data?.choices?.[0]?.message?.content || "";
+  return { content: [{ type: "text", text }] };
+}
+
+// یک مسیر واحد که Claude، Gemini و Z.ai از آن عبور می‌کنند
 app.post("/api/generate", async (req, res) => {
   try {
     const { provider = "anthropic", system, messages, max_tokens } = req.body;
@@ -124,10 +176,14 @@ app.post("/api/generate", async (req, res) => {
       : lastMsg?.content;
     console.log(`[${new Date().toISOString()}] provider=${provider} userText="${(textBlock || "").slice(0, 120)}"`);
 
-    const data =
-      provider === "gemini"
-        ? await handleGemini(system, messages, max_tokens)
-        : await handleAnthropic(system, messages, max_tokens);
+    let data;
+    if (provider === "gemini") {
+      data = await handleGemini(system, messages, max_tokens);
+    } else if (provider === "zai") {
+      data = await handleZai(system, messages, max_tokens);
+    } else {
+      data = await handleAnthropic(system, messages, max_tokens);
+    }
 
     const resultPreview = data?.content?.[0]?.text?.slice(0, 120) || "";
     console.log(`[${new Date().toISOString()}] result preview: "${resultPreview}"`);
