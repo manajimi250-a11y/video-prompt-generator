@@ -46,21 +46,25 @@ body {
 
 /* ---------- Header ---------- */
 .header {
-  border-bottom: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  border-bottom: none;
+  background: transparent;
   position: sticky;
   top: 0;
   z-index: 10;
+  padding: 16px 16px 4px;
 }
 .header-inner {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 20px 28px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
+  gap: 16px;
+  background: linear-gradient(160deg, #FBF5E9, #F1E4CC);
+  border: 1px solid rgba(180, 140, 60, 0.4);
+  border-radius: 24px;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 .logo-badge {
   width: 44px; height: 44px;
@@ -77,12 +81,12 @@ body {
 }
 .header-banner {
   flex: 1;
-  height: 56px;
+  height: 96px;
   width: auto;
-  max-width: 260px;
+  max-width: 460px;
   object-fit: contain;
-  border-radius: 10px;
-  box-shadow: 0 4px 16px rgba(212, 175, 90, 0.25);
+  border-radius: 0;
+  box-shadow: none;
 }
 .header-text { flex: 1; min-width: 0; }
 .header-text h1 {
@@ -326,16 +330,17 @@ textarea::placeholder, .input::placeholder { color: var(--text-dim); }
 
 .btn-outline {
   flex-shrink: 0;
-  padding: 8px 14px;
-  border-radius: 10px;
-  border: 1.5px solid var(--border-2);
-  background: var(--surface);
-  color: var(--text-muted);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px; font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 999px;
+  border: 1px solid #B8862E;
+  background: linear-gradient(180deg, #F6DE9C, #C99A3F);
+  color: #3A2A0F;
+  font-family: 'Vazirmatn', sans-serif;
+  font-size: 13px; font-weight: 700;
   cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
-.btn-outline:hover { color: var(--pink-dark); border-color: var(--pink); }
+.btn-outline:hover { filter: brightness(1.05); }
 
 /* ---------- Output panel ---------- */
 .output-panel {
@@ -563,6 +568,10 @@ textarea::placeholder, .input::placeholder { color: var(--text-dim); }
 .main-grid, .col, .card, .chip-row, .output-panel { min-width: 0; }
 
 @media (max-width: 640px) {
+  .header { padding: 10px 10px 4px; }
+  .header-inner { padding: 12px 14px; border-radius: 18px; gap: 10px; }
+  .header-banner { height: 56px; max-width: 220px; }
+  .btn-outline { font-size: 12px; padding: 8px 14px; }
   .header-text h1 { font-size: 24px; }
   .header-text p { font-size: 13.5px; }
   .field-label { font-size: 12.5px; }
