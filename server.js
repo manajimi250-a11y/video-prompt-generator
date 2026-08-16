@@ -192,8 +192,11 @@ app.post("/api/generate", async (req, res) => {
       data = await handleAnthropic(system, messages, max_tokens);
     }
 
-    const resultPreview = data?.content?.[0]?.text?.slice(0, 120) || "";
-    console.log(`[${new Date().toISOString()}] result preview: "${resultPreview}"`);
+    const fullText = data?.content?.[0]?.text || "";
+    const segmentCount = (fullText.match(/###\s*SEGMENT/gi) || []).length;
+    console.log(
+      `[${new Date().toISOString()}] result length=${fullText.length} segmentMarkers=${segmentCount} preview: "${fullText.slice(0, 120)}"`
+    );
 
     res.json(data);
   } catch (err) {
