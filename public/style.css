@@ -81,10 +81,11 @@ body {
 }
 .header-banner {
   flex: 1;
-  height: 96px;
+  height: 280px;
   width: auto;
-  max-width: 460px;
+  max-width: 900px;
   object-fit: contain;
+  object-position: right center;
   border-radius: 0;
   box-shadow: none;
 }
@@ -569,8 +570,8 @@ textarea::placeholder, .input::placeholder { color: var(--text-dim); }
 
 @media (max-width: 640px) {
   .header { padding: 10px 10px 4px; }
-  .header-inner { padding: 12px 14px; border-radius: 18px; gap: 10px; }
-  .header-banner { height: 56px; max-width: 220px; }
+  .header-inner { padding: 10px 12px; border-radius: 18px; gap: 8px; }
+  .header-banner { height: 168px; max-width: 260px; }
   .btn-outline { font-size: 12px; padding: 8px 14px; }
   .header-text h1 { font-size: 24px; }
   .header-text p { font-size: 13.5px; }
