@@ -23,7 +23,7 @@
 
       <div class="card">
         <label class="field-label">سبک ویدیو</label>
-        <div id="stylePresetsRow" class="chip-row"></div>
+        <select id="stylePresetSelect" class="select" style="margin-bottom: 0"></select>
         <p id="styleDesc" class="hint-text">یک سبک را انتخاب کن تا به پرامت اضافه شود (اختیاری)</p>
       </div>
 
@@ -74,8 +74,8 @@
         </div>
       </div>
 
-      <div class="card">
-        <label class="field-label">گزینه‌های پیشرفته</label>
+      <details class="card collapsible">
+        <summary class="field-label collapsible-summary">گزینه‌های پیشرفته</summary>
 
         <div class="toggle-row">
           <div>
@@ -109,7 +109,7 @@
           <button id="musicToggle" class="switch"><span class="knob"></span></button>
         </div>
         <input id="musicStyleInput" type="text" class="input hidden" placeholder="سبک موزیک دلخواه (اختیاری) — مثلاً: امبینت آرام، سینتی‌ویو، لوفای" />
-      </div>
+      </details>
 
       <div class="card">
         <div class="row-between">

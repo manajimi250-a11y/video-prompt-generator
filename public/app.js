@@ -269,7 +269,7 @@ Do not add any preamble, meta-commentary, or markdown formatting like asterisks 
 // ---------- DOM refs ----------
 const $ = (id) => document.getElementById(id);
 const ideaInput = $("ideaInput");
-const stylePresetsRow = $("stylePresetsRow");
+const stylePresetSelect = $("stylePresetSelect");
 const styleDesc = $("styleDesc");
 const imagesRow = $("imagesRow");
 const imageInput = $("imageInput");
@@ -361,9 +361,10 @@ function initSelects() {
 }
 
 function renderStylePresets() {
-  stylePresetsRow.innerHTML = STYLE_PRESETS.map(
-    (p) => `<button class="pill${state.selectedPreset === p.id ? " active" : ""}" data-id="${p.id}">${p.label}</button>`
-  ).join("");
+  stylePresetSelect.innerHTML =
+    `<option value="">بدون سبک خاص</option>` +
+    STYLE_PRESETS.map((p) => `<option value="${p.id}">${p.label}</option>`).join("");
+  stylePresetSelect.value = state.selectedPreset || "";
   styleDesc.textContent = state.selectedPreset
     ? STYLE_PRESETS.find((p) => p.id === state.selectedPreset)?.desc
     : "یک سبک را انتخاب کن تا به پرامت اضافه شود (اختیاری)";
@@ -436,10 +437,8 @@ providerZaiBtn.addEventListener("click", () => {
   providerGeminiBtn.classList.remove("active");
 });
 
-stylePresetsRow.addEventListener("click", (e) => {
-  const btn = e.target.closest("[data-id]");
-  if (!btn) return;
-  state.selectedPreset = state.selectedPreset === btn.dataset.id ? null : btn.dataset.id;
+stylePresetSelect.addEventListener("change", (e) => {
+  state.selectedPreset = e.target.value || null;
   renderStylePresets();
 });
 

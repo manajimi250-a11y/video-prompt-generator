@@ -129,6 +129,27 @@ body {
   box-shadow: 0 2px 14px rgba(196, 176, 255, 0.08);
 }
 
+.collapsible-summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0;
+}
+.collapsible-summary::-webkit-details-marker { display: none; }
+.collapsible-summary::after {
+  content: "▾";
+  font-size: 15px;
+  color: var(--purple-dark);
+  transform: rotate(0deg);
+  transition: transform 0.15s;
+  line-height: 1;
+}
+.collapsible[open] > .collapsible-summary::after { transform: rotate(180deg); }
+.collapsible[open] > .collapsible-summary { margin-bottom: 14px; }
+.collapsible .toggle-row:first-of-type { padding-top: 4px; }
+
 .field-label {
   display: block;
   font-family: 'JetBrains Mono', monospace;
