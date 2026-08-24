@@ -193,7 +193,9 @@ ${faceInstruction}${dialogueInstruction}${musicInstruction}
 
 ${langInstruction}
 
-Be maximally specific and sensory — a reader should be able to visualize the exact shot. Do not add any preamble, meta-commentary, or markdown formatting like asterisks or headers with #. Just the labeled plain-text sections as specified. Do not explain your reasoning.`;
+LENGTH & FOCUS: Keep the total prompt practical for real video-generation platforms — most enforce a prompt length limit and work best with a focused, prioritized description, not an exhaustive list of every possible detail. Prioritize whatever most defines the shot (the core subject, action, and mood the user described) over secondary embellishments. Aim for roughly 150-250 words total across all sections combined — do not pad sections just to sound thorough. The user's original idea must stay the clear, unmistakable center of the prompt; never let secondary detail bury or distort it.
+
+Be maximally specific and sensory within that length — a reader should be able to visualize the exact shot. Do not add any preamble, meta-commentary, or markdown formatting like asterisks or headers with #. Just the labeled plain-text sections as specified. Do not explain your reasoning.`;
   }
 
   return `You are an elite AI video-generation prompt engineer. You specialize in translating a rough creative idea and reference images into a CHAIN of sequential, production-ready prompts for text-to-video AI models (such as Sora, Veo, Kling, or Runway), designed for platforms that support image-to-video continuation.
@@ -218,7 +220,9 @@ ${faceInstruction}${dialogueInstruction}${musicInstruction}
 
 ${langInstruction}
 
-Be maximally specific and sensory. Each segment must read as a standalone, complete prompt a user can paste directly into a video model, while still connecting seamlessly to its neighbors. Do not add any preamble, meta-commentary, or markdown formatting like asterisks or headers with #, other than the required "### SEGMENT <n> ###" markers. Do not explain your reasoning.`;
+LENGTH & FOCUS: Keep each segment practical for real video-generation platforms — most enforce a prompt length limit and work best with a focused, prioritized description, not an exhaustive list of every possible detail. Aim for roughly 120-180 words per segment — do not pad sections just to sound thorough. The user's original idea must stay the clear, unmistakable center of every segment; never let secondary detail bury or distort it.
+
+Be maximally specific and sensory within that length. Each segment must read as a standalone, complete prompt a user can paste directly into a video model, while still connecting seamlessly to its neighbors. Do not add any preamble, meta-commentary, or markdown formatting like asterisks or headers with #, other than the required "### SEGMENT <n> ###" markers. Do not explain your reasoning.`;
 }
 
 function buildAnalysisSystemPrompt() {
@@ -228,17 +232,17 @@ function buildAnalysisSystemPrompt() {
       : "Write the entire output in Persian (Farsi), but keep technical camera/lens terminology in English where that is standard industry practice.";
 
   const sectionList = [
-    "LOGLINE (1 vivid sentence) — captures the whole shot/scene in one line.",
-    "SCENE & SETTING (minimum 60 words) — exact location type, time of day, weather/season cues, background elements, set dressing, textures and materials visible.",
-    "SUBJECT(S) (minimum 80 words) — every person/animal/object in frame: precise physical description (build, age range, hair, clothing down to color/fabric/fit), pose, expression, and how these change frame-to-frame.",
-    "ACTION & TIMELINE (minimum 80 words) — break the clip into a beginning/middle/end. Describe exactly how each subject moves and how the scene evolves between every consecutive frame pair — speed of motion, direction, any interaction between subjects or with objects.",
-    "CAMERA (minimum 60 words) — shot type (wide/medium/close-up/extreme close-up), framing and composition, apparent lens (wide-angle/normal/telephoto feel), any camera movement inferred from framing shifts across frames (pan/tilt/dolly/zoom/handheld shake/static), depth of field and what's in/out of focus.",
-    "LIGHTING & COLOR (minimum 50 words) — direction and hardness of light, visible shadows, practical light sources in frame, overall color grade/palette, contrast level, any color shifts across the frames.",
-    "ATMOSPHERE & STYLE (minimum 50 words) — overall mood, genre/film reference touchstones, texture (film grain, digital clean, anamorphic flares, etc), any visible artifacts or stylistic choices.",
+    "LOGLINE — one vivid sentence capturing the whole shot/scene.",
+    "SCENE & SETTING — location type, time of day, key background elements, set dressing.",
+    "SUBJECT(S) — who/what is in frame: distinguishing physical description, clothing, pose, expression, and how these change frame-to-frame.",
+    "ACTION & TIMELINE — the beginning/middle/end of the clip, described as continuous motion inferred from comparing consecutive frames.",
+    "CAMERA — shot type, framing, apparent lens feel, any camera movement inferred from framing shifts across frames, depth of field.",
+    "LIGHTING & COLOR — light direction/hardness, key sources, color grade, contrast.",
+    "ATMOSPHERE & STYLE — overall mood, genre touchstones, texture (film grain, digital clean, etc).",
     state.musicEnabled
-      ? "MUSIC (minimum 40 words) — plausible genre, instrumentation, tempo/BPM feel matching the footage's energy and pacing."
-      : "AUDIO NOTES (minimum 40 words) — plausible ambient/diegetic sound cues matching exactly what is visually happening (footsteps, wind, traffic, etc).",
-    "NEGATIVE / AVOID (minimum 30 words) — artifacts or qualities to avoid when regenerating this footage.",
+      ? "MUSIC — plausible genre, instrumentation, tempo/BPM feel matching the footage's energy."
+      : "AUDIO NOTES — plausible ambient/diegetic sound cues matching what is visually happening.",
+    "NEGATIVE / AVOID — artifacts or qualities to avoid when regenerating this footage.",
   ];
 
   const faceInstruction = "\nIDENTITY LOCK: If a person/face appears, describe their exact facial features, hairstyle, and distinguishing traits in the SUBJECT(S) section precisely, and state identity must remain fully consistent if regenerated.";
@@ -248,15 +252,15 @@ function buildAnalysisSystemPrompt() {
 
   const platformLabel = PLATFORMS.find((p) => p.id === state.platform)?.label;
 
-  return `You are an elite AI video-generation prompt engineer specializing in reverse-engineering EXTREMELY detailed, high-fidelity prompts from real footage. You are given ${state.extractedFrames.length} frames extracted in chronological order (start to end) from an actual video clip. Your job is to write the exact detailed prompt that, if given to a text-to-video AI model (target platform: ${platformLabel}, aspect ratio ${state.aspect}), would regenerate this same footage as closely as possible.
+  return `You are an elite AI video-generation prompt engineer specializing in reverse-engineering accurate, high-fidelity prompts from real footage. You are given ${state.extractedFrames.length} frames extracted in chronological order (start to end) from an actual video clip. Your job is to write the exact prompt that, if given to a text-to-video AI model (target platform: ${platformLabel}, aspect ratio ${state.aspect}), would regenerate this same footage as closely as possible.
 
-CRITICAL — examine every single one of the ${state.extractedFrames.length} frames individually and compare each to its neighbors before writing anything. Do not summarize only the first frame or write generic filler. Every section must contain specific, concrete, visually-grounded detail pulled directly from what is actually visible across the frames — colors, textures, exact positioning, precise motion — never vague placeholders like "a person walks" without describing exactly how, wearing what, where, and against what background. This output should be noticeably richer and more detailed than a short generic caption; aim for the level of detail a professional cinematographer's shot notes would contain.
+CRITICAL — examine every single one of the ${state.extractedFrames.length} frames individually and compare each to its neighbors before writing anything. Do not summarize only the first frame or write generic filler. Every section must contain specific, concrete, visually-grounded detail pulled directly from what is actually visible — never vague placeholders like "a person walks" without saying exactly how, wearing what, where.
 
-LENGTH REQUIREMENT: Each section below has a minimum word count — treat these as hard floors, not suggestions. A short, economical answer is a FAILURE for this task. The complete response across all sections must total at least 450 words. If you find yourself running out of things to say in a section, look again at the frames for more concrete visual detail (background elements, textures, secondary motion, subtle lighting changes) rather than stopping short.
+LENGTH & FOCUS: Keep the total prompt practical for real video-generation platforms — most enforce a prompt length limit and work best with a focused, prioritized description, not an exhaustive list of every possible detail. Aim for roughly 150-250 words total across all sections combined. Prioritize whatever most defines the shot (the core subject and action actually seen in the frames) over secondary embellishments — never let secondary detail bury or distort what the footage is actually about.
 
 Only describe what is visible or strongly implied by comparing the frames — do not invent unrelated plot details. Infer the motion happening between frames as smooth continuous action.
 
-Structure the output with these exact uppercase section labels, each followed by flowing, richly detailed descriptive text meeting its minimum word count:
+Structure the output with these exact uppercase section labels, each followed by flowing, concrete descriptive text:
 
 ${sectionList.join("\n")}
 ${faceInstruction}${dialogueInstruction}
