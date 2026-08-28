@@ -160,7 +160,7 @@ function buildSystemPrompt() {
   sectionList.push("NEGATIVE / AVOID — artifacts, elements, or qualities to avoid (only include if the platform supports negative prompting; otherwise omit this section).");
 
   const faceInstruction = state.images.length > 0
-    ? `\nIDENTITY LOCK: Reference images contain the exact face(s)/character identity that must appear in every scene or segment, unchanged. In the SUBJECT(S) section, explicitly lock the facial features, hairstyle, and distinguishing traits shown in the reference images, and state that identity must remain 100% consistent across the entire video with no drift in facial structure. If multiple reference images show the same person from different angles, treat them as one locked identity reference, not separate characters.`
+    ? `\nIDENTITY LOCK: Reference images contain the exact character identity that must appear in every scene or segment, unchanged. First identify the subject's actual species/type exactly as shown (human, cat, dog, or any other creature/object) — never assume human by default. In the SUBJECT(S) section, explicitly lock the distinguishing features appropriate to that species (for a human: facial features and hairstyle; for an animal: exact fur/feather/scale pattern, coloring, breed-like features, and body proportions; etc.) shown in the reference images, and state that this identity — including species and body type — must remain 100% consistent across the entire video with no drift into a different anatomy (for example, an animal character must stay a full animal body, never gain human limbs, posture, or a human face). If multiple reference images show the same subject from different angles, treat them as one locked identity reference, not separate characters.`
     : "";
 
   const dialogueInstruction = !state.hasDialogue
@@ -245,7 +245,7 @@ function buildAnalysisSystemPrompt() {
     "NEGATIVE / AVOID — artifacts or qualities to avoid when regenerating this footage.",
   ];
 
-  const faceInstruction = "\nIDENTITY LOCK: If a person/face appears, describe their exact facial features, hairstyle, and distinguishing traits in the SUBJECT(S) section precisely, and state identity must remain fully consistent if regenerated.";
+  const faceInstruction = "\nIDENTITY LOCK: If a person, animal, or character appears, first identify its actual species/type exactly as seen (human, cat, dog, other creature, etc.) — never assume human by default. Describe its exact distinguishing features appropriate to that species (facial features and hairstyle for a human; exact fur/coloring/body proportions for an animal) in the SUBJECT(S) section precisely, and state that this identity — including species and body type — must remain fully consistent if regenerated, with no drift into a different anatomy.";
   const dialogueInstruction = !state.hasDialogue
     ? '\nNO DIALOGUE: Regardless of what is seen, instruct that the regenerated video must contain no spoken dialogue, no lip-sync, no on-screen text. Add "no dialogue, no lip-sync, no subtitles" to NEGATIVE / AVOID.'
     : "\nDIALOGUE ALLOWED: If any speech or lip movement is visible in the frames, transcribe or plausibly reconstruct short natural dialogue lines with speaker attribution in the ACTION & TIMELINE section, timed to match the footage.";
@@ -800,7 +800,7 @@ function buildLipsyncSystemPrompt() {
 
   const hasFaceRef = state.lipsyncImage || state.lipsyncVideoFrames.length > 0;
   const faceInstruction = hasFaceRef
-    ? "\nIDENTITY LOCK: A reference image and/or reference video frames of the character are provided. Lock the facial features, hairstyle, and distinguishing traits exactly as shown, consistent throughout the SUBJECT section."
+    ? "\nIDENTITY LOCK: A reference image and/or reference video frames of the character are provided. First identify the actual species/type exactly as shown (human, animal, or otherwise) — never assume human by default. Lock the distinguishing features appropriate to that species (facial features/hairstyle for a human; fur/coloring/body shape for an animal) exactly as shown, consistent throughout the SUBJECT section, with no drift into a different anatomy."
     : "";
   const videoInstruction =
     state.lipsyncVideoFrames.length > 0
@@ -1000,20 +1000,20 @@ function buildCharacterSwapSystemPrompt() {
       : "Write the entire output in Persian (Farsi), but keep technical camera/lens terminology in English where that is standard industry practice.";
   const platformLabel = PLATFORMS.find((p) => p.id === state.platform)?.label;
 
-  return `You are an elite AI video-generation prompt engineer specializing in character replacement. You are given ${state.swapVideoFrames.length} frames extracted in chronological order from an original video, PLUS one reference photo of a NEW character/person (the final image provided).
+  return `You are an elite AI video-generation prompt engineer specializing in character replacement. You are given ${state.swapVideoFrames.length} frames extracted in chronological order from an original video, PLUS one reference photo of a NEW character/subject (the final image provided). The subject in either the original footage or the reference photo may be a human, an animal, or another creature — first identify the actual species/type shown in each, never assume human by default.
 
-Your job: write one finished prompt (target platform: ${platformLabel}, aspect ratio ${state.aspect}) that regenerates the ORIGINAL footage's action, camera work, environment, and lighting EXACTLY as observed in the frames, but with the person in the footage replaced by the individual shown in the reference photo.
+Your job: write one finished prompt (target platform: ${platformLabel}, aspect ratio ${state.aspect}) that regenerates the ORIGINAL footage's action, camera work, environment, and lighting EXACTLY as observed in the frames, but with the subject in the footage replaced by the individual/creature shown in the reference photo — including replacing its species/body type if the reference photo shows a different one than the original footage (e.g., if the original footage shows an animal and the reference photo also shows an animal, the result must keep a full animal body, not shift toward a human one, and vice versa).
 
 Structure the output with these exact uppercase section labels:
 
 LOGLINE — one vivid sentence.
 SCENE & SETTING — location, time of day, environment, exactly as seen in the original frames.
-SUBJECT — describe the NEW character using the reference photo's facial features, hairstyle, and distinguishing traits in detail. Explicitly state this identity replaces the original person while everything else about the scene stays identical. Include a direct instruction such as: "Use the provided/attached reference photo for this character's face and identity" — phrased so it still makes sense if the person also uploads that same reference photo directly into a video platform's own character/reference-image field, not just as a text description.
+SUBJECT — describe the NEW subject using the reference photo's exact species/type, distinguishing features (facial features/hairstyle for a human; fur/coloring/body shape for an animal), and other distinguishing traits in detail. Explicitly state this identity — including its species/body type — replaces the original subject while everything else about the scene stays identical, with no drift into a different anatomy. Include a direct instruction such as: "Use the provided/attached reference photo for this subject's identity and body" — phrased so it still makes sense if the person also uploads that same reference photo directly into a video platform's own character/reference-image field, not just as a text description.
 ACTION & TIMELINE — the same action/motion observed across the original frames.
 CAMERA — shot type, framing, movement, exactly as in the original.
 LIGHTING & COLOR — as observed in the original footage.
 ATMOSPHERE & STYLE — as observed.
-NEGATIVE / AVOID — should explicitly include an instruction not to retain the original person's face/identity.
+NEGATIVE / AVOID — should explicitly include an instruction not to retain the original subject's identity or species/body type.
 
 ${langInstruction}
 
