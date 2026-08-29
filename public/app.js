@@ -163,6 +163,8 @@ function buildSystemPrompt() {
     ? `\nIDENTITY LOCK: Reference images contain the exact character identity that must appear in every scene or segment, unchanged. First identify the subject's actual species/type exactly as shown (human, cat, dog, or any other creature/object) — never assume human by default. In the SUBJECT(S) section, explicitly lock the distinguishing features appropriate to that species (for a human: facial features and hairstyle; for an animal: exact fur/feather/scale pattern, coloring, breed-like features, and body proportions; etc.) shown in the reference images, and state that this identity — including species and body type — must remain 100% consistent across the entire video with no drift into a different anatomy (for example, an animal character must stay a full animal body, never gain human limbs, posture, or a human face). If multiple reference images show the same subject from different angles, treat them as one locked identity reference, not separate characters.`
     : "";
 
+  const wardrobeInstruction = `\nWARDROBE LOCK: Once you describe a subject's clothing/wardrobe in the SUBJECT(S) section, that exact outfit (garment types, colors, fit, accessories) must stay IDENTICAL throughout the entire video and across all segments if the output is split — no outfit changes, no color shifts, no swapping between similar items (for example, shorts must not turn into pants, a jacket must not appear or disappear) unless the user's idea explicitly describes a costume change as part of the story. If the output is split into multiple segments, repeat the exact same wardrobe description in every segment's SUBJECT(S) section.`;
+
   const dialogueInstruction = !state.hasDialogue
     ? `\nNO DIALOGUE: This video must contain no spoken dialogue, no lip movement implying speech, and no on-screen text or subtitles. Describe the storytelling as purely visual — expression, gesture, and action carry the meaning. Add "no dialogue, no lip-sync, no spoken words, no subtitles" to the NEGATIVE / AVOID section.`
     : `\nDIALOGUE ALLOWED: This video may include spoken dialogue or vocal lines. In the ACTION & TIMELINE section, write short, natural, in-character lines of dialogue exactly as they should be spoken, with clear speaker attribution and timing, so a model with lip-sync/voice capability can use them directly.`;
@@ -189,7 +191,7 @@ The user will give you:
 Your job: produce ONE finished, copy-paste-ready video generation prompt, structured with these labeled sections (use these exact uppercase labels, each on its own line, followed by tightly written descriptive detail — not bullet fragments but flowing cinematic description):
 
 ${sectionList.join("\n")}
-${faceInstruction}${dialogueInstruction}${musicInstruction}
+${faceInstruction}${wardrobeInstruction}${dialogueInstruction}${musicInstruction}
 
 ${langInstruction}
 
@@ -216,7 +218,7 @@ Then, for each segment, write the labeled sections below:
 
 ${sectionList.join("\n")}
 CONTINUITY — for segment 1, describe the exact opening frame in full detail (this frame will be captured and reused). For every segment after the first, explicitly instruct: "Begin this clip from the final frame of the previous clip (use it as the image-to-video starting reference)" and state precisely which elements must remain pixel-identical to that last frame (character position/identity, wardrobe, environment, lighting, camera framing) before the new motion begins.
-${faceInstruction}${dialogueInstruction}${musicInstruction}
+${faceInstruction}${wardrobeInstruction}${dialogueInstruction}${musicInstruction}
 
 ${langInstruction}
 
@@ -246,6 +248,7 @@ function buildAnalysisSystemPrompt() {
   ];
 
   const faceInstruction = "\nIDENTITY LOCK: If a person, animal, or character appears, first identify its actual species/type exactly as seen (human, cat, dog, other creature, etc.) — never assume human by default. Describe its exact distinguishing features appropriate to that species (facial features and hairstyle for a human; exact fur/coloring/body proportions for an animal) in the SUBJECT(S) section precisely, and state that this identity — including species and body type — must remain fully consistent if regenerated, with no drift into a different anatomy.";
+  const wardrobeInstruction = "\nWARDROBE LOCK: Describe the subject's exact clothing/wardrobe as seen in the frames, and state this exact outfit must stay identical throughout the regenerated video with no changes partway through (no swapping between similar items, e.g. shorts must not turn into pants), unless a costume change is clearly visible across the frames themselves.";
   const dialogueInstruction = !state.hasDialogue
     ? '\nNO DIALOGUE: Regardless of what is seen, instruct that the regenerated video must contain no spoken dialogue, no lip-sync, no on-screen text. Add "no dialogue, no lip-sync, no subtitles" to NEGATIVE / AVOID.'
     : "\nDIALOGUE ALLOWED: If any speech or lip movement is visible in the frames, transcribe or plausibly reconstruct short natural dialogue lines with speaker attribution in the ACTION & TIMELINE section, timed to match the footage.";
@@ -263,7 +266,7 @@ Only describe what is visible or strongly implied by comparing the frames — do
 Structure the output with these exact uppercase section labels, each followed by flowing, concrete descriptive text:
 
 ${sectionList.join("\n")}
-${faceInstruction}${dialogueInstruction}
+${faceInstruction}${wardrobeInstruction}${dialogueInstruction}
 
 ${langInstruction}
 
