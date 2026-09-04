@@ -10,6 +10,23 @@ const PLATFORMS = [
 const ASPECTS = ["16:9", "9:16", "1:1", "21:9"];
 const DURATIONS = ["۴ ثانیه", "۸ ثانیه", "۱۰ ثانیه", "۱۵ ثانیه", "۳۰ ثانیه", "نامشخص"];
 
+const CAMERA_MOVEMENTS = [
+  "ثابت (Static)",
+  "پن به چپ (Pan Left)",
+  "پن به راست (Pan Right)",
+  "تیلت به بالا (Tilt Up)",
+  "تیلت به پایین (Tilt Down)",
+  "زوم به داخل (Zoom In)",
+  "زوم به بیرون (Zoom Out)",
+  "دالی به جلو (Dolly In)",
+  "دالی به عقب (Dolly Out)",
+  "تعقیب/دنبال‌کردن (Tracking Shot)",
+  "دوربین روی دست (Handheld)",
+  "چرخش مداری (Orbit/Arc)",
+  "کرین/هوایی (Crane/Aerial)",
+];
+const MOTION_SPEEDS = ["آهسته (Slow)", "متوسط (Medium)", "سریع (Fast)", "شتاب‌گیرنده (Accelerating)", "کندشونده (Decelerating)"];
+
 const STYLE_PRESETS = [
   { id: "cinematic_realistic", label: "Cinematic Realistic", desc: "کاملاً واقعی، مثل فیلم سینمایی", descriptor: "cinematic realistic style, true-to-life live-action film quality, natural realistic detail and lighting" },
   { id: "comedy", label: "Funny / Comedy", desc: "تأکید روی واکنش‌های بامزه و زمان‌بندی کمدی", descriptor: "comedic style, funny exaggerated reactions, sharp comedic timing" },
@@ -53,6 +70,7 @@ const state = {
   lipsyncMusicFile: null,
   swapVideoFrames: [],
   swapImage: null,
+  motionImage: null,
 };
 
 // ---------- Helpers ----------
@@ -144,9 +162,9 @@ function buildSystemPrompt() {
   const sectionList = [
     "LOGLINE — one vivid sentence capturing the whole shot/scene.",
     "SCENE & SETTING — location, time of day, environment detail, set dressing.",
-    "SUBJECT(S) — who/what is in frame, appearance, wardrobe, expression, referencing the uploaded images where relevant.",
-    "ACTION & TIMELINE — what happens, broken into a beginning/middle/end within the segment duration, described as continuous motion.",
-    "CAMERA — shot type, framing, lens feel, camera movement (dolly/pan/handheld/crane/static), depth of field.",
+    "SUBJECT(S) — who/what is in frame: appearance, wardrobe, expression, referencing the uploaded images where relevant. Include only characteristics that are visible in the reference or explicitly requested by the user — do not invent unnecessary personal details.",
+    "ACTION & TIMELINE — describe the shot as four clear stages: OPENING (the first moment/frame), DEVELOPMENT (how the action builds), MAIN MOMENT (the strongest/most important visual beat), and ENDING (the final position/frame) — with exact starting position, movement direction/speed, and ending position for every important action. Never write vague lines like \"the subject moves beautifully\" — describe precisely how.",
+    "CAMERA — shot type, framing, lens feel, camera movement (dolly/pan/handheld/crane/static), movement speed, depth of field. Give ONE clear, coherent camera instruction — do not stack multiple conflicting movements into the same shot.",
     "LIGHTING & COLOR — light sources, direction, color grade, contrast, mood of the palette.",
     "ATMOSPHERE & STYLE — overall mood, genre/film reference touchstones, texture (film grain, digital clean, anamorphic, etc).",
   ];
@@ -157,17 +175,35 @@ function buildSystemPrompt() {
   } else {
     sectionList.push("AUDIO NOTES — ambient sound and diegetic sound cues (no music track; describe only environmental/atmospheric sound).");
   }
-  sectionList.push("NEGATIVE / AVOID — artifacts, elements, or qualities to avoid (only include if the platform supports negative prompting; otherwise omit this section).");
+  sectionList.push(
+    "NEGATIVE / AVOID — a concise but powerful avoidance list covering whichever categories are relevant: IDENTITY (different face, face-swap, identity drift, facial morphing), BODY (proportion changes, distorted anatomy, duplicated/missing limbs), CLOTHING (wardrobe changes, color/design changes, disappearing accessories), ANIMAL (different animal, species/fur/marking changes) if applicable, and VIDEO artifacts (flickering, temporal inconsistency, object morphing, unstable background, unwanted text/subtitles/logos)."
+  );
 
-  const faceInstruction = state.images.length > 0
-    ? `\nIDENTITY LOCK: Reference images contain the exact character identity that must appear in every scene or segment, unchanged. First identify the subject's actual species/type exactly as shown (human, cat, dog, or any other creature/object) — never assume human by default. In the SUBJECT(S) section, explicitly lock the distinguishing features appropriate to that species (for a human: facial features and hairstyle; for an animal: exact fur/feather/scale pattern, coloring, breed-like features, and body proportions; etc.) shown in the reference images, and state that this identity — including species and body type — must remain 100% consistent across the entire video with no drift into a different anatomy (for example, an animal character must stay a full animal body, never gain human limbs, posture, or a human face). If multiple reference images show the same subject from different angles, treat them as one locked identity reference, not separate characters.`
+  const hasImages = state.images.length > 0;
+  const consistencyLocks = hasImages
+    ? `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CRITICAL REFERENCE CONSISTENCY LOCK — HIGHEST PRIORITY, NEVER IGNORE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+The provided reference image(s) are the PRIMARY and AUTHORITATIVE source for the visual identity of the subject(s). Their visible characteristics must be preserved throughout the entire video. Never randomly redesign, replace, or reinterpret the referenced subject. If there is ever a conflict between an inferred/creative detail and what the reference image actually shows, always prioritize the reference image unless the user explicitly requests a change.
+
+First identify the subject's actual species/type exactly as shown (human, cat, dog, or any other creature/object) — never assume human by default.
+
+IDENTITY LOCK (human subjects): preserve facial structure, proportions, eye/nose/mouth/jawline shape, skin tone, hairstyle, hair color, facial hair, and any recognizable characteristics. The SAME PERSON must appear from the first frame to the last — never face-swap, morph, age-shift, or drift the identity.
+
+IDENTITY LOCK (animal subjects): treat the referenced animal as a unique individual — preserve species, breed characteristics, body proportions, size, fur/feather/scale color and pattern, markings, ear/tail shape, and distinctive features. The SAME ANIMAL must appear throughout — never change species, breed characteristics, or body proportions, and never let an animal gain human limbs, posture, or a human face.
+
+BODY CONSISTENCY LOCK: preserve body proportions, build, and posture characteristics for the locked subject throughout. Never stretch/shrink body parts, duplicate or remove limbs, or distort anatomy between frames or segments — all movement must follow believable, natural biomechanics for that subject's species.
+
+CLOTHING & ACCESSORY LOCK: once wardrobe is described in SUBJECT(S), that exact outfit (garment types, colors, fit, accessories, jewelry, shoes) must stay visually IDENTICAL for the entire video and across every segment if the output is split — no outfit changes, no color shifts, no swapping between similar items (e.g. shorts must not turn into pants) — unless the user's idea explicitly describes a costume change as part of the story.
+
+If multiple subjects appear, keep each one's identity, body, and wardrobe separately locked and never mix faces, swap identities, or transfer clothing between them.
+`
     : "";
-
-  const wardrobeInstruction = `\nWARDROBE LOCK: Once you describe a subject's clothing/wardrobe in the SUBJECT(S) section, that exact outfit (garment types, colors, fit, accessories) must stay IDENTICAL throughout the entire video and across all segments if the output is split — no outfit changes, no color shifts, no swapping between similar items (for example, shorts must not turn into pants, a jacket must not appear or disappear) unless the user's idea explicitly describes a costume change as part of the story. If the output is split into multiple segments, repeat the exact same wardrobe description in every segment's SUBJECT(S) section.`;
 
   const dialogueInstruction = !state.hasDialogue
     ? `\nNO DIALOGUE: This video must contain no spoken dialogue, no lip movement implying speech, and no on-screen text or subtitles. Describe the storytelling as purely visual — expression, gesture, and action carry the meaning. Add "no dialogue, no lip-sync, no spoken words, no subtitles" to the NEGATIVE / AVOID section.`
-    : `\nDIALOGUE ALLOWED: This video may include spoken dialogue or vocal lines. In the ACTION & TIMELINE section, write short, natural, in-character lines of dialogue exactly as they should be spoken, with clear speaker attribution and timing, so a model with lip-sync/voice capability can use them directly.`;
+    : `\nDIALOGUE ALLOWED: This video may include spoken dialogue or vocal lines. In the ACTION & TIMELINE section, write short, natural, in-character lines of dialogue exactly as they should be spoken, with clear speaker attribution and timing, so a model with lip-sync/voice capability can use them directly. Do not invent dialogue beyond what naturally fits the described action.`;
 
   const musicInstruction = state.musicEnabled
     ? `\nMUSIC REQUIRED: The user wants an original music track guiding the video.${
@@ -175,50 +211,54 @@ function buildSystemPrompt() {
       } Describe the MUSIC section with enough detail (instrumentation, tempo, emotional arc, key sync points with the visual action) that a composer or a music-generation model could realize it.`
     : "";
 
+  const qualityCheck = `\nSILENT SELF-CHECK (do not print this): before answering, verify — is the locked identity/body/clothing/species preserved throughout? Is every action physically believable and precisely described (not vague)? Is the camera movement clear? Does the prompt stay true to the user's original idea without secondary detail burying it? Is it free of contradictions and directly ready to paste into a video platform? If any check fails, silently revise before responding.`;
+
   const platformLabel = PLATFORMS.find((p) => p.id === state.platform)?.label;
 
   if (!state.splitEnabled) {
-    return `You are an elite AI video-generation prompt engineer. You specialize in translating a rough creative idea and reference images into an extremely detailed, production-ready prompt for text-to-video AI models (such as Sora, Veo, Kling, or Runway).
+    return `You are an elite AI Video Prompt Director, Cinematographer, and Prompt Engineer. You specialize in translating a rough creative idea and reference images into an extremely detailed, accurate, cinematic, production-ready prompt for text-to-video AI models (such as Sora, Veo, Kling, or Runway).
 
 The user will give you:
 - A general idea for a video
-- Optional reference images (for style, subject, composition, mood, or face/identity reference)
+- Optional reference images (for style, subject, composition, mood, or identity reference)
 - Target platform: ${platformLabel}
 - Aspect ratio: ${state.aspect}
 - Target duration: ${state.duration}
 - Optional extra style notes
-
+${consistencyLocks}
 Your job: produce ONE finished, copy-paste-ready video generation prompt, structured with these labeled sections (use these exact uppercase labels, each on its own line, followed by tightly written descriptive detail — not bullet fragments but flowing cinematic description):
 
 ${sectionList.join("\n")}
-${faceInstruction}${wardrobeInstruction}${dialogueInstruction}${musicInstruction}
+${dialogueInstruction}${musicInstruction}
+${qualityCheck}
 
 ${langInstruction}
 
-LENGTH & FOCUS: Keep the total prompt practical for real video-generation platforms — most enforce a prompt length limit and work best with a focused, prioritized description, not an exhaustive list of every possible detail. Prioritize whatever most defines the shot (the core subject, action, and mood the user described) over secondary embellishments. Aim for roughly 150-250 words total across all sections combined — do not pad sections just to sound thorough. The user's original idea must stay the clear, unmistakable center of the prompt; never let secondary detail bury or distort it.
+LENGTH & FOCUS: Keep the total prompt practical for real video-generation platforms — most enforce a prompt length limit and work best with a focused, prioritized description, not an exhaustive list of every possible detail. Prioritize whatever most defines the shot (the core subject, action, and mood the user described) over secondary embellishments. Aim for roughly 150-250 words total across all sections combined — do not pad sections just to sound thorough, and never let consistency-lock detail turn into unnecessary keyword spam. The user's original idea must stay the clear, unmistakable center of the prompt.
 
 Be maximally specific and sensory within that length — a reader should be able to visualize the exact shot. Do not add any preamble, meta-commentary, or markdown formatting like asterisks or headers with #. Just the labeled plain-text sections as specified. Do not explain your reasoning.`;
   }
 
-  return `You are an elite AI video-generation prompt engineer. You specialize in translating a rough creative idea and reference images into a CHAIN of sequential, production-ready prompts for text-to-video AI models (such as Sora, Veo, Kling, or Runway), designed for platforms that support image-to-video continuation.
+  return `You are an elite AI Video Prompt Director, Cinematographer, and Prompt Engineer. You specialize in translating a rough creative idea and reference images into a CHAIN of sequential, production-ready prompts for text-to-video AI models (such as Sora, Veo, Kling, or Runway), designed for platforms that support image-to-video continuation.
 
 The user will give you:
 - A general idea for a video (the full story arc, to be split across multiple short clips)
-- Optional reference images (for style, subject, composition, mood, or face/identity reference)
+- Optional reference images (for style, subject, composition, mood, or identity reference)
 - Target platform: ${platformLabel}
 - Aspect ratio: ${state.aspect}
 - Duration per segment: ${state.duration}
 - Number of segments to split the idea into: ${state.segmentCount}
 - Optional extra style notes
-
+${consistencyLocks}
 Your job: break the overall idea into exactly ${state.segmentCount} sequential clips that together tell the full story with zero visual discontinuity. Output each segment starting with a line EXACTLY in this format (nothing else on that line):
 ### SEGMENT <n> ###
 
 Then, for each segment, write the labeled sections below:
 
 ${sectionList.join("\n")}
-CONTINUITY — for segment 1, describe the exact opening frame in full detail (this frame will be captured and reused). For every segment after the first, explicitly instruct: "Begin this clip from the final frame of the previous clip (use it as the image-to-video starting reference)" and state precisely which elements must remain pixel-identical to that last frame (character position/identity, wardrobe, environment, lighting, camera framing) before the new motion begins.
-${faceInstruction}${wardrobeInstruction}${dialogueInstruction}${musicInstruction}
+CONTINUITY — for segment 1, describe the exact opening frame in full detail (this frame will be captured and reused). For every segment after the first, explicitly instruct: "Begin this clip from the final frame of the previous clip (use it as the image-to-video starting reference)" and state precisely which elements must remain pixel-identical to that last frame (identity, body, wardrobe, environment, lighting, camera framing) before the new motion begins.
+${dialogueInstruction}${musicInstruction}
+${qualityCheck}
 
 ${langInstruction}
 
@@ -237,10 +277,11 @@ function buildAnalysisSystemPrompt() {
     "LOGLINE — one vivid sentence capturing the whole shot/scene.",
     "SCENE & SETTING — location type, time of day, key background elements, set dressing.",
     "SUBJECT(S) — who/what is in frame: distinguishing physical description, clothing, pose, expression, and how these change frame-to-frame.",
-    "ACTION & TIMELINE — the beginning/middle/end of the clip, described as continuous motion inferred from comparing consecutive frames.",
-    "CAMERA — shot type, framing, apparent lens feel, any camera movement inferred from framing shifts across frames, depth of field.",
+    "ACTION & TIMELINE — describe as four stages inferred from the frames: OPENING (first frame), DEVELOPMENT (how it builds across the middle frames), MAIN MOMENT (the strongest visual beat), ENDING (final frame) — with exact position/direction/speed for every movement.",
+    "CAMERA — shot type, framing, apparent lens feel, any camera movement inferred from framing shifts across frames, depth of field. Describe it as ONE coherent movement, not several conflicting ones.",
     "LIGHTING & COLOR — light direction/hardness, key sources, color grade, contrast.",
     "ATMOSPHERE & STYLE — overall mood, genre touchstones, texture (film grain, digital clean, etc).",
+    "EDITING & EFFECTS — only if visible across the frames: cuts, speed changes, slow motion, motion blur, particles, fog, or other visible effects. Omit this section if nothing of the sort is apparent.",
     state.musicEnabled
       ? "MUSIC — plausible genre, instrumentation, tempo/BPM feel matching the footage's energy."
       : "AUDIO NOTES — plausible ambient/diegetic sound cues matching what is visually happening.",
@@ -345,6 +386,18 @@ const swapResultBox = $("swapResultBox");
 const swapResultText = $("swapResultText");
 const swapCopyBtn = $("swapCopyBtn");
 
+const motionImageRow = $("motionImageRow");
+const motionImageInput = $("motionImageInput");
+const motionCameraSelect = $("motionCameraSelect");
+const motionSpeedSelect = $("motionSpeedSelect");
+const motionSubjectInput = $("motionSubjectInput");
+const motionFramingInput = $("motionFramingInput");
+const motionErrorBox = $("motionErrorBox");
+const motionGenerateBtn = $("motionGenerateBtn");
+const motionResultBox = $("motionResultBox");
+const motionResultText = $("motionResultText");
+const motionCopyBtn = $("motionCopyBtn");
+
 const titlesErrorBox = $("titlesErrorBox");
 const titlesGenerateBtn = $("titlesGenerateBtn");
 const titlesResultBox = $("titlesResultBox");
@@ -365,6 +418,9 @@ function initSelects() {
   segmentCountButtons.innerHTML = [2, 3, 4, 5, 6]
     .map((n) => `<button class="segment-btn${n === state.segmentCount ? " active" : ""}" data-n="${n}">${n}</button>`)
     .join("");
+
+  motionCameraSelect.innerHTML = CAMERA_MOVEMENTS.map((c) => `<option value="${c}">${c}</option>`).join("");
+  motionSpeedSelect.innerHTML = MOTION_SPEEDS.map((s) => `<option value="${s}">${s}</option>`).join("");
 }
 
 function renderStylePresets() {
@@ -812,8 +868,11 @@ function buildLipsyncSystemPrompt() {
   const musicFileInstruction = state.lipsyncMusicFile
     ? "\nAUDIO FILE PROVIDED: An actual music/audio file is attached. Listen to it and base the MUSIC and LIP-SYNC & TIMING sections on its real tempo, rhythm, mood, and (if vocals are present) the actual words/phrasing — don't just rely on the text description."
     : "";
+  const wardrobeInstruction = "\nWARDROBE LOCK: Once wardrobe is described in the SUBJECT section, it must stay identical for the entire clip — no outfit changes, color shifts, or swapped garments unless explicitly part of the requested idea.";
 
   return `You are an elite AI video-generation prompt engineer specializing in lip-synced, music-driven videos. Target platform: ${platformLabel}, aspect ratio ${state.aspect}.
+
+LENGTH & FOCUS: Keep the total prompt practical for real video-generation platforms — aim for roughly 150-250 words total across all sections combined. Prioritize the core performance and lip-sync timing over secondary embellishments.
 
 Produce ONE finished, copy-paste-ready prompt for a lip-sync/music-video capable video AI model, structured with these exact uppercase section labels:
 
@@ -821,12 +880,12 @@ LOGLINE — one vivid sentence capturing the whole shot.
 SCENE & SETTING — location, environment, exactly as seen in any reference video provided, otherwise inferred from context.
 SUBJECT — who is performing, appearance, expression, wardrobe.${faceInstruction}
 MUSIC — the musical style, tempo, instrumentation, and energy.
-LIP-SYNC & TIMING — precise mouth-shape/viseme cues and facial performance timed to the beat and, if provided, to the exact lyrics/words given by the user. Describe this beat-by-beat or line-by-line so a lip-sync model can follow it closely.
-CAMERA — shot type, framing, movement.
+LIP-SYNC & TIMING — describe as staged beats (OPENING, BUILD, PEAK, ENDING) with precise mouth-shape/viseme cues and facial performance timed to the beat and, if provided, to the exact lyrics/words given by the user.
+CAMERA — shot type, framing, movement. Give ONE coherent camera movement, not several conflicting ones.
 LIGHTING & COLOR — light sources, grade, mood.
 ATMOSPHERE & STYLE — overall visual mood/genre.
 NEGATIVE / AVOID — artifacts or qualities to avoid.
-${videoInstruction}${musicFileInstruction}
+${videoInstruction}${musicFileInstruction}${wardrobeInstruction}
 
 ${langInstruction}
 
@@ -950,6 +1009,113 @@ function renderSwapImage() {
     $("swapImageAdd").addEventListener("click", () => swapImageInput.click());
   }
 }
+
+// ---------- More modal: motion control ----------
+function renderMotionImage() {
+  if (state.motionImage) {
+    motionImageRow.innerHTML = `<div class="small-thumb"><img src="${state.motionImage.previewUrl}" alt="" /><button class="remove-btn" id="motionImageRemove">✕</button></div>`;
+    $("motionImageRemove").addEventListener("click", () => {
+      state.motionImage = null;
+      renderMotionImage();
+    });
+  } else {
+    motionImageRow.innerHTML = `<button class="add-small-image-btn" id="motionImageAdd">⬆<span>افزودن</span></button>`;
+    $("motionImageAdd").addEventListener("click", () => motionImageInput.click());
+  }
+}
+
+motionImageInput.addEventListener("change", async (e) => {
+  const file = e.target.files?.[0];
+  e.target.value = "";
+  if (!file) return;
+  motionErrorBox.classList.add("hidden");
+  try {
+    const base64 = await fileToBase64(file);
+    state.motionImage = { base64, mediaType: file.type, previewUrl: URL.createObjectURL(file) };
+    renderMotionImage();
+  } catch (err) {
+    motionErrorBox.textContent = "بارگذاری تصویر ناموفق بود.";
+    motionErrorBox.classList.remove("hidden");
+  }
+});
+
+function buildMotionControlSystemPrompt() {
+  const langInstruction =
+    state.outputLang === "en"
+      ? "Write the entire output in English, since text-to-video models parse English prompts most reliably."
+      : "Write the entire output in Persian (Farsi), matching the user's language, but keep technical camera/lens terminology in English where that is standard industry practice.";
+  const platformLabel = PLATFORMS.find((p) => p.id === state.platform)?.label;
+  const cameraMovement = motionCameraSelect.value;
+  const speed = motionSpeedSelect.value;
+  const faceInstruction = state.motionImage
+    ? "\nIDENTITY LOCK: A reference image is provided. First identify the actual species/type of the subject shown (human, animal, or otherwise) — never assume human by default. Lock its distinguishing features exactly as shown in the SUBJECT section, with no drift into a different anatomy."
+    : "";
+  const wardrobeInstruction = "\nWARDROBE LOCK: Once wardrobe is described in the SUBJECT section, it must stay identical for the entire clip — no outfit changes, color shifts, or swapped garments.";
+
+  return `You are an elite AI video-generation prompt engineer specializing in EXTREMELY PRECISE camera and subject motion control, for platforms that support explicit motion/camera-path instructions (such as Kling, Runway Gen-4, Luma Dream Machine).
+
+Target platform: ${platformLabel}, aspect ratio: ${state.aspect}.
+Requested camera movement: ${cameraMovement}.
+Requested movement speed: ${speed}.
+
+LENGTH & FOCUS: Keep the total prompt practical for real video-generation platforms — aim for roughly 150-250 words total across all sections combined. The precision of the motion description matters far more than overall length.
+
+Produce ONE finished, copy-paste-ready motion-control prompt structured with these exact uppercase section labels:
+
+LOGLINE — one vivid sentence.
+SCENE & SETTING — brief scene context grounding the shot.
+SUBJECT — who/what is in frame, appearance, wardrobe.${faceInstruction}${wardrobeInstruction}
+CAMERA MOTION — describe the "${cameraMovement}" movement at "${speed}" speed as three precise stages — START (exact camera position), PATH (the trajectory it travels), END (exact ending position) — using precise cinematography terminology. Give ONE coherent camera movement, not several conflicting ones stacked together.
+SUBJECT MOTION — precise description of how the subject moves, exactly synced in timing with the camera motion described above.
+FRAMING — starting composition/framing and ending composition/framing (what's in frame, headroom, lead room).
+LIGHTING & COLOR — brief.
+NEGATIVE / AVOID — motion artifacts to avoid (e.g., jitter, warped anatomy, inconsistent speed, motion blur errors).
+
+${langInstruction}
+
+Be maximally precise about timing, direction, and speed of motion — this is the single most important part of this prompt, more important than visual flourish. Do not add preamble or markdown formatting. Just the labeled plain-text sections.`;
+}
+
+motionGenerateBtn.addEventListener("click", async () => {
+  const subjectMotion = motionSubjectInput.value.trim();
+  if (!subjectMotion) {
+    motionErrorBox.textContent = "لطفاً حرکت سوژه را توضیح بده.";
+    motionErrorBox.classList.remove("hidden");
+    return;
+  }
+  motionErrorBox.classList.add("hidden");
+  motionResultBox.classList.add("hidden");
+  motionGenerateBtn.disabled = true;
+  motionGenerateBtn.textContent = "در حال تولید...";
+
+  try {
+    const contentBlocks = [];
+    if (state.motionImage) {
+      contentBlocks.push({
+        type: "image",
+        source: { type: "base64", media_type: state.motionImage.mediaType, data: state.motionImage.base64 },
+      });
+    }
+    let userText = `حرکت سوژه: ${subjectMotion}`;
+    const framing = motionFramingInput.value.trim();
+    if (framing) userText += `\nقاب شروع و پایان: ${framing}`;
+    contentBlocks.push({ type: "text", text: userText });
+
+    const text = await callAI(buildMotionControlSystemPrompt(), [{ role: "user", content: contentBlocks }], 1800);
+    motionResultText.textContent = text;
+    motionResultBox.classList.remove("hidden");
+  } catch (err) {
+    motionErrorBox.textContent = "تولید پرامت ناموفق بود. دوباره تلاش کن.";
+    motionErrorBox.classList.remove("hidden");
+  } finally {
+    motionGenerateBtn.disabled = false;
+    motionGenerateBtn.textContent = "تولید پرامت کنترل حرکت";
+  }
+});
+
+motionCopyBtn.addEventListener("click", () => {
+  navigator.clipboard.writeText(motionResultText.textContent).then(() => flashCopied(motionCopyBtn));
+});
 swapImageInput.addEventListener("change", async (e) => {
   const file = e.target.files?.[0];
   e.target.value = "";
@@ -1007,16 +1173,18 @@ function buildCharacterSwapSystemPrompt() {
 
 Your job: write one finished prompt (target platform: ${platformLabel}, aspect ratio ${state.aspect}) that regenerates the ORIGINAL footage's action, camera work, environment, and lighting EXACTLY as observed in the frames, but with the subject in the footage replaced by the individual/creature shown in the reference photo — including replacing its species/body type if the reference photo shows a different one than the original footage (e.g., if the original footage shows an animal and the reference photo also shows an animal, the result must keep a full animal body, not shift toward a human one, and vice versa).
 
+LENGTH & FOCUS: Keep the total prompt practical for real video-generation platforms — aim for roughly 150-250 words total across all sections combined. Prioritize the identity swap and the original action over secondary embellishments.
+
 Structure the output with these exact uppercase section labels:
 
 LOGLINE — one vivid sentence.
 SCENE & SETTING — location, time of day, environment, exactly as seen in the original frames.
-SUBJECT — describe the NEW subject using the reference photo's exact species/type, distinguishing features (facial features/hairstyle for a human; fur/coloring/body shape for an animal), and other distinguishing traits in detail. Explicitly state this identity — including its species/body type — replaces the original subject while everything else about the scene stays identical, with no drift into a different anatomy. Include a direct instruction such as: "Use the provided/attached reference photo for this subject's identity and body" — phrased so it still makes sense if the person also uploads that same reference photo directly into a video platform's own character/reference-image field, not just as a text description.
-ACTION & TIMELINE — the same action/motion observed across the original frames.
-CAMERA — shot type, framing, movement, exactly as in the original.
+SUBJECT — describe the NEW subject using the reference photo's exact species/type, distinguishing features (facial features/hairstyle for a human; fur/coloring/body shape for an animal), and wardrobe if applicable, in detail. Explicitly state this identity — including its species/body type — replaces the original subject while everything else about the scene stays identical, with no drift into a different anatomy. Include a direct instruction such as: "Use the provided/attached reference photo for this subject's identity and body" — phrased so it still makes sense if the person also uploads that same reference photo directly into a video platform's own character/reference-image field, not just as a text description. WARDROBE LOCK: once described, the outfit must stay identical for the entire clip, with no changes partway through.
+ACTION & TIMELINE — the same action/motion observed across the original frames, described as staged beats: OPENING, DEVELOPMENT, MAIN MOMENT, ENDING.
+CAMERA — shot type, framing, movement, exactly as in the original. Give ONE coherent camera movement, not several conflicting ones.
 LIGHTING & COLOR — as observed in the original footage.
 ATMOSPHERE & STYLE — as observed.
-NEGATIVE / AVOID — should explicitly include an instruction not to retain the original subject's identity or species/body type.
+NEGATIVE / AVOID — should explicitly include an instruction not to retain the original subject's identity, species/body type, or wardrobe.
 
 ${langInstruction}
 

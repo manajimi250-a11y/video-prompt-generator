@@ -196,6 +196,14 @@
             </div>
             <span class="feature-chevron">‹</span>
           </button>
+          <button class="feature-row" data-feature="panelMotionControl">
+            <div class="feature-icon">🎮</div>
+            <div class="feature-row-text">
+              <p class="toggle-label">کنترل حرکت (Motion Control)</p>
+              <p class="toggle-sub">حرکت دقیق دوربین و سوژه رو مشخص کن تا پرامت حرفه‌ای بسازه</p>
+            </div>
+            <span class="feature-chevron">‹</span>
+          </button>
         </div>
 
         <!-- Panel: Video → Prompt -->
@@ -280,6 +288,39 @@
               <button id="swapCopyBtn" class="btn-link">کپی</button>
             </div>
             <pre id="swapResultText" class="output-pre"></pre>
+          </div>
+        </div>
+
+        <!-- Panel: Motion Control -->
+        <div id="panelMotionControl" class="feature-panel hidden">
+          <button class="btn-back" data-back>→ بازگشت</button>
+          <p class="hint-text">حرکت دقیق دوربین و سوژه رو مشخص کن تا یه پرامت حرفه‌ای و دقیق برای پلتفرم‌هایی که کنترل حرکت دارن (مثل Kling، Runway، Luma) بسازیم.</p>
+
+          <label class="field-label">عکس مرجع (اختیاری — فریم شروع)</label>
+          <div id="motionImageRow" class="chip-row"></div>
+          <input id="motionImageInput" type="file" accept="image/*" hidden />
+
+          <label class="field-label">نوع حرکت دوربین</label>
+          <select id="motionCameraSelect" class="select"></select>
+
+          <label class="field-label">سرعت حرکت</label>
+          <select id="motionSpeedSelect" class="select"></select>
+
+          <label class="field-label">حرکت سوژه</label>
+          <textarea id="motionSubjectInput" rows="3" placeholder="مثلاً: شخصیت از سمت چپ قاب وارد می‌شود و به سمت دوربین راه می‌رود"></textarea>
+
+          <label class="field-label">قاب شروع و پایان (اختیاری)</label>
+          <input id="motionFramingInput" type="text" class="input" placeholder="مثلاً: شروع با نمای باز از کل صحنه، پایان با کلوزآپ چهره" />
+
+          <div id="motionErrorBox" class="error-box hidden"></div>
+          <button id="motionGenerateBtn" class="btn-secondary">تولید پرامت کنترل حرکت</button>
+
+          <div id="motionResultBox" class="segment-card hidden">
+            <div class="segment-header">
+              <span class="segment-title cyan">پرامت کنترل حرکت</span>
+              <button id="motionCopyBtn" class="btn-link">کپی</button>
+            </div>
+            <pre id="motionResultText" class="output-pre"></pre>
           </div>
         </div>
 
