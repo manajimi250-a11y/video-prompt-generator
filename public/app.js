@@ -174,7 +174,13 @@ function buildSystemPrompt() {
   const useRoster = state.useCharacterRoster && state.characterRoster.length > 0;
   if (useRoster) {
     sectionList.unshift(
-      "CHARACTER APPEARANCES — list which known roster characters (by name) genuinely appear in this video, based on matching the reference images/idea against the roster below. If none of the roster characters appear, say so explicitly. Do not assume a character is present just because it's listed in the roster."
+      `CHARACTER APPEARANCES — a numbered list of every character present in this video (whether matched from the known roster or newly appearing here). Format it EXACTLY like this example (adapt the title, names, roles, and segment numbers to the actual content; use "پرامپت ۱" if the output is not split into segments):
+"شخصیت‌های این ویدیو + پرامپت عکس مرجع هرکدام
+۱. [NAME] ([role/short description]) — حضور در: پرامپت [segment numbers, e.g. ۱، ۲، ۳]
+[one line: if this character matches a known roster entry, write "از عکس مرجع اصلی که قبلاً ساختیم استفاده کنید (" + a short visual description + ")."; if this is a newly appearing character with no roster match, instead give a short visual reference description of them directly]
+۲. [NAME] (...) — حضور در: پرامپت [...]
+[same one-line pattern]
+..."`
     );
   }
 
@@ -419,12 +425,6 @@ const motionResultBox = $("motionResultBox");
 const motionResultText = $("motionResultText");
 const motionCopyBtn = $("motionCopyBtn");
 
-const rosterImageRow = $("rosterImageRow");
-const rosterImageInput = $("rosterImageInput");
-const rosterNameInput = $("rosterNameInput");
-const rosterEpisodeInput = $("rosterEpisodeInput");
-const rosterErrorBox = $("rosterErrorBox");
-const rosterAddBtn = $("rosterAddBtn");
 const rosterList = $("rosterList");
 const rosterMatchToggle = $("rosterMatchToggle");
 
@@ -1195,36 +1195,6 @@ motionCopyBtn.addEventListener("click", () => {
 });
 
 // ---------- More modal: character roster ----------
-let pendingRosterImage = null;
-
-function renderRosterImage() {
-  if (pendingRosterImage) {
-    rosterImageRow.innerHTML = `<div class="small-thumb"><img src="${pendingRosterImage.previewUrl}" alt="" /><button class="remove-btn" id="rosterImageRemove">✕</button></div>`;
-    $("rosterImageRemove").addEventListener("click", () => {
-      pendingRosterImage = null;
-      renderRosterImage();
-    });
-  } else {
-    rosterImageRow.innerHTML = `<button class="add-small-image-btn" id="rosterImageAdd">⬆<span>افزودن</span></button>`;
-    $("rosterImageAdd").addEventListener("click", () => rosterImageInput.click());
-  }
-}
-
-rosterImageInput.addEventListener("change", async (e) => {
-  const file = e.target.files?.[0];
-  e.target.value = "";
-  if (!file) return;
-  rosterErrorBox.classList.add("hidden");
-  try {
-    const base64 = await fileToBase64(file);
-    pendingRosterImage = { base64, mediaType: file.type, previewUrl: URL.createObjectURL(file) };
-    renderRosterImage();
-  } catch (err) {
-    rosterErrorBox.textContent = "بارگذاری تصویر ناموفق بود.";
-    rosterErrorBox.classList.remove("hidden");
-  }
-});
-
 function renderRosterList() {
   if (state.characterRoster.length === 0) {
     rosterList.innerHTML = `<p class="hint-text small">هنوز کاراکتری ثبت نشده.</p>`;
@@ -1262,51 +1232,6 @@ function renderRosterList() {
     });
   });
 }
-
-rosterAddBtn.addEventListener("click", async () => {
-  const name = rosterNameInput.value.trim();
-  const episode = rosterEpisodeInput.value.trim();
-  if (!name || !pendingRosterImage) {
-    rosterErrorBox.textContent = "لطفاً اسم کاراکتر و عکس مرجع را وارد کن.";
-    rosterErrorBox.classList.remove("hidden");
-    return;
-  }
-  rosterErrorBox.classList.add("hidden");
-  rosterAddBtn.disabled = true;
-  rosterAddBtn.textContent = "در حال ساخت توضیح...";
-
-  try {
-    const system =
-      "You are a precise visual describer. Given one reference image, first identify the subject's actual species/type (human, animal, or otherwise) — never assume human by default. Then write a concise 2-3 sentence identity-lock description covering: species/type, facial features or fur/coloring, body build, and wardrobe if visible — written so it can be reused verbatim as a consistency reference in future video prompts. No preamble, just the description.";
-    const contentBlocks = [
-      { type: "image", source: { type: "base64", media_type: pendingRosterImage.mediaType, data: pendingRosterImage.base64 } },
-      { type: "text", text: "Describe this character for reuse as a consistency reference." },
-    ];
-    const description = await callAI(system, [{ role: "user", content: contentBlocks }], 300);
-
-    state.characterRoster.push({
-      name,
-      episode,
-      base64: pendingRosterImage.base64,
-      mediaType: pendingRosterImage.mediaType,
-      previewUrl: pendingRosterImage.previewUrl,
-      description,
-    });
-    saveDraft();
-    renderRosterList();
-
-    pendingRosterImage = null;
-    renderRosterImage();
-    rosterNameInput.value = "";
-    rosterEpisodeInput.value = "";
-  } catch (err) {
-    rosterErrorBox.textContent = "ساخت توضیح ناموفق بود. دوباره تلاش کن.";
-    rosterErrorBox.classList.remove("hidden");
-  } finally {
-    rosterAddBtn.disabled = false;
-    rosterAddBtn.textContent = "افزودن کاراکتر";
-  }
-});
 
 swapImageInput.addEventListener("change", async (e) => {
   const file = e.target.files?.[0];
@@ -1581,7 +1506,6 @@ renderImages();
 renderResult();
 renderLipsyncImage();
 renderSwapImage();
-renderRosterImage();
 renderRosterList();
 
 setInterval(saveDraft, 2000);
