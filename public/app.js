@@ -171,7 +171,7 @@ function buildSystemPrompt() {
     "ATMOSPHERE & STYLE — overall mood, genre/film reference touchstones, texture (film grain, digital clean, anamorphic, etc).",
   ];
 
-  const useRoster = state.useCharacterRoster && state.characterRoster.length > 0;
+  const useRoster = state.useCharacterRoster && state.images.length > 0;
   if (useRoster) {
     sectionList.unshift(
       `CHARACTER APPEARANCES — a numbered list of every character present in this video (whether matched from the known roster or newly appearing here). Format it EXACTLY like this example (adapt the title, names, roles, and segment numbers to the actual content; use "پرامپت ۱" if the output is not split into segments):
@@ -229,10 +229,13 @@ If multiple subjects appear, keep each one's identity, body, and wardrobe separa
   const qualityCheck = `\nSILENT SELF-CHECK (do not print this): before answering, verify — is the locked identity/body/clothing/species preserved throughout? Is every action physically believable and precisely described (not vague)? Is the camera movement clear? Does the prompt stay true to the user's original idea without secondary detail burying it? Is it free of contradictions and directly ready to paste into a video platform? If any check fails, silently revise before responding.`;
 
   const rosterInstruction = useRoster
-    ? `
+    ? state.characterRoster.length > 0
+      ? `
 KNOWN CHARACTER ROSTER: The user maintains a roster of previously defined characters. Their reference photos are attached (in the same order listed below, after any other reference images), each with a short identity description:
 ${state.characterRoster.map((c, i) => `${i + 1}. ${c.name} (${c.episode || "no episode noted"}): ${c.description}`).join("\n")}
-Compare the current reference image(s)/idea against this roster to see which ones genuinely appear in this video.`
+Compare the current reference image(s)/idea against this roster to see which ones genuinely appear in this video, and which are new (not yet in the roster).`
+      : `
+There is no existing character roster yet. Treat every character visible in the current reference image(s)/idea as newly appearing — still list them in CHARACTER APPEARANCES.`
     : "";
 
   const rosterPerSegmentInstruction = useRoster
