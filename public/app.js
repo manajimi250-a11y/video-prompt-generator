@@ -71,6 +71,7 @@ const state = {
   swapVideoFrames: [],
   swapImage: null,
   motionImage: null,
+  characterRoster: [],
 };
 
 // ---------- Helpers ----------
@@ -397,6 +398,14 @@ const motionGenerateBtn = $("motionGenerateBtn");
 const motionResultBox = $("motionResultBox");
 const motionResultText = $("motionResultText");
 const motionCopyBtn = $("motionCopyBtn");
+
+const rosterImageRow = $("rosterImageRow");
+const rosterImageInput = $("rosterImageInput");
+const rosterNameInput = $("rosterNameInput");
+const rosterEpisodeInput = $("rosterEpisodeInput");
+const rosterErrorBox = $("rosterErrorBox");
+const rosterAddBtn = $("rosterAddBtn");
+const rosterList = $("rosterList");
 
 const titlesErrorBox = $("titlesErrorBox");
 const titlesGenerateBtn = $("titlesGenerateBtn");
@@ -1116,6 +1125,121 @@ motionGenerateBtn.addEventListener("click", async () => {
 motionCopyBtn.addEventListener("click", () => {
   navigator.clipboard.writeText(motionResultText.textContent).then(() => flashCopied(motionCopyBtn));
 });
+
+// ---------- More modal: character roster ----------
+let pendingRosterImage = null;
+
+function renderRosterImage() {
+  if (pendingRosterImage) {
+    rosterImageRow.innerHTML = `<div class="small-thumb"><img src="${pendingRosterImage.previewUrl}" alt="" /><button class="remove-btn" id="rosterImageRemove">✕</button></div>`;
+    $("rosterImageRemove").addEventListener("click", () => {
+      pendingRosterImage = null;
+      renderRosterImage();
+    });
+  } else {
+    rosterImageRow.innerHTML = `<button class="add-small-image-btn" id="rosterImageAdd">⬆<span>افزودن</span></button>`;
+    $("rosterImageAdd").addEventListener("click", () => rosterImageInput.click());
+  }
+}
+
+rosterImageInput.addEventListener("change", async (e) => {
+  const file = e.target.files?.[0];
+  e.target.value = "";
+  if (!file) return;
+  rosterErrorBox.classList.add("hidden");
+  try {
+    const base64 = await fileToBase64(file);
+    pendingRosterImage = { base64, mediaType: file.type, previewUrl: URL.createObjectURL(file) };
+    renderRosterImage();
+  } catch (err) {
+    rosterErrorBox.textContent = "بارگذاری تصویر ناموفق بود.";
+    rosterErrorBox.classList.remove("hidden");
+  }
+});
+
+function renderRosterList() {
+  if (state.characterRoster.length === 0) {
+    rosterList.innerHTML = `<p class="hint-text small">هنوز کاراکتری ثبت نشده.</p>`;
+    return;
+  }
+  rosterList.innerHTML = state.characterRoster
+    .map(
+      (c, i) => `<div class="segment-card">
+        <div class="segment-header">
+          <span class="segment-title cyan">${escapeHtml(c.name)} — ${escapeHtml(c.episode || "بدون اپیزود")}</span>
+          <div style="display:flex; gap:10px;">
+            <button class="btn-link" data-roster-copy="${i}">کپی</button>
+            <button class="btn-link" data-roster-remove="${i}">حذف</button>
+          </div>
+        </div>
+        <div style="display:flex; gap:10px; padding:10px;">
+          <img src="${c.previewUrl}" alt="" class="small-thumb" style="flex-shrink:0" />
+          <pre class="output-pre" dir="${state.outputLang === "en" ? "ltr" : "rtl"}" style="padding:0">${escapeHtml(c.description)}</pre>
+        </div>
+      </div>`
+    )
+    .join("");
+
+  rosterList.querySelectorAll("[data-roster-copy]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const c = state.characterRoster[Number(btn.dataset.rosterCopy)];
+      navigator.clipboard.writeText(`${c.name} (${c.episode || "بدون اپیزود"}): ${c.description}`).then(() => flashCopied(btn));
+    });
+  });
+  rosterList.querySelectorAll("[data-roster-remove]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      state.characterRoster.splice(Number(btn.dataset.rosterRemove), 1);
+      renderRosterList();
+      saveDraft();
+    });
+  });
+}
+
+rosterAddBtn.addEventListener("click", async () => {
+  const name = rosterNameInput.value.trim();
+  const episode = rosterEpisodeInput.value.trim();
+  if (!name || !pendingRosterImage) {
+    rosterErrorBox.textContent = "لطفاً اسم کاراکتر و عکس مرجع را وارد کن.";
+    rosterErrorBox.classList.remove("hidden");
+    return;
+  }
+  rosterErrorBox.classList.add("hidden");
+  rosterAddBtn.disabled = true;
+  rosterAddBtn.textContent = "در حال ساخت توضیح...";
+
+  try {
+    const system =
+      "You are a precise visual describer. Given one reference image, first identify the subject's actual species/type (human, animal, or otherwise) — never assume human by default. Then write a concise 2-3 sentence identity-lock description covering: species/type, facial features or fur/coloring, body build, and wardrobe if visible — written so it can be reused verbatim as a consistency reference in future video prompts. No preamble, just the description.";
+    const contentBlocks = [
+      { type: "image", source: { type: "base64", media_type: pendingRosterImage.mediaType, data: pendingRosterImage.base64 } },
+      { type: "text", text: "Describe this character for reuse as a consistency reference." },
+    ];
+    const description = await callAI(system, [{ role: "user", content: contentBlocks }], 300);
+
+    state.characterRoster.push({
+      name,
+      episode,
+      base64: pendingRosterImage.base64,
+      mediaType: pendingRosterImage.mediaType,
+      previewUrl: pendingRosterImage.previewUrl,
+      description,
+    });
+    saveDraft();
+    renderRosterList();
+
+    pendingRosterImage = null;
+    renderRosterImage();
+    rosterNameInput.value = "";
+    rosterEpisodeInput.value = "";
+  } catch (err) {
+    rosterErrorBox.textContent = "ساخت توضیح ناموفق بود. دوباره تلاش کن.";
+    rosterErrorBox.classList.remove("hidden");
+  } finally {
+    rosterAddBtn.disabled = false;
+    rosterAddBtn.textContent = "افزودن کاراکتر";
+  }
+});
+
 swapImageInput.addEventListener("change", async (e) => {
   const file = e.target.files?.[0];
   e.target.value = "";
@@ -1294,6 +1418,13 @@ function saveDraft() {
       selectedPreset: state.selectedPreset,
       images: state.images.map((img) => ({ base64: img.base64, mediaType: img.mediaType })),
       result: state.result,
+      characterRoster: state.characterRoster.map((c) => ({
+        name: c.name,
+        episode: c.episode,
+        base64: c.base64,
+        mediaType: c.mediaType,
+        description: c.description,
+      })),
     };
     localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
   } catch (e) {
@@ -1330,6 +1461,13 @@ function loadDraft() {
         base64: img.base64,
         mediaType: img.mediaType,
         previewUrl: `data:${img.mediaType};base64,${img.base64}`,
+      }));
+    }
+
+    if (Array.isArray(draft.characterRoster)) {
+      state.characterRoster = draft.characterRoster.map((c) => ({
+        ...c,
+        previewUrl: `data:${c.mediaType};base64,${c.base64}`,
       }));
     }
   } catch (e) {
@@ -1371,6 +1509,8 @@ renderImages();
 renderResult();
 renderLipsyncImage();
 renderSwapImage();
+renderRosterImage();
+renderRosterList();
 
 setInterval(saveDraft, 2000);
 document.addEventListener("visibilitychange", () => {
