@@ -109,6 +109,29 @@
           <button id="musicToggle" class="switch"><span class="knob"></span></button>
         </div>
         <input id="musicStyleInput" type="text" class="input hidden" placeholder="سبک موزیک دلخواه (اختیاری) — مثلاً: امبینت آرام، سینتی‌ویو، لوفای" />
+
+        <div class="divider"></div>
+
+        <label class="field-label">📒 دفترچه کاراکترها</label>
+        <p class="hint-text" style="margin-top:0">برای هر کاراکتر، عکس مرجع، اسم و اپیزودی که توش هست رو ثبت کن — خودکار یه توضیح هویت می‌سازیم که بتونی توی پرامت‌های بعدی برای ثابت‌نگه‌داشتن چهره/بدنش استفاده کنی.</p>
+
+        <label class="field-label">عکس مرجع کاراکتر</label>
+        <div id="rosterImageRow" class="chip-row"></div>
+        <input id="rosterImageInput" type="file" accept="image/*" hidden />
+
+        <label class="field-label">اسم کاراکتر</label>
+        <input id="rosterNameInput" type="text" class="input" placeholder="مثلاً: آرش" />
+
+        <label class="field-label">اپیزود(ها)</label>
+        <input id="rosterEpisodeInput" type="text" class="input" placeholder="مثلاً: اپیزود ۱، ۳" />
+
+        <div id="rosterErrorBox" class="error-box hidden"></div>
+        <button id="rosterAddBtn" class="btn-secondary">افزودن کاراکتر</button>
+
+        <div class="divider"></div>
+
+        <label class="field-label">کاراکترهای ثبت‌شده</label>
+        <div id="rosterList"></div>
       </details>
 
       <div class="card">
@@ -201,14 +224,6 @@
             <div class="feature-row-text">
               <p class="toggle-label">کنترل حرکت (Motion Control)</p>
               <p class="toggle-sub">حرکت دقیق دوربین و سوژه رو مشخص کن تا پرامت حرفه‌ای بسازه</p>
-            </div>
-            <span class="feature-chevron">‹</span>
-          </button>
-          <button class="feature-row" data-feature="panelCharacterRoster">
-            <div class="feature-icon">📒</div>
-            <div class="feature-row-text">
-              <p class="toggle-label">دفترچه کاراکترها</p>
-              <p class="toggle-sub">عکس، اسم و اپیزود هر کاراکتر رو نگه دار تا یادت نره</p>
             </div>
             <span class="feature-chevron">‹</span>
           </button>
@@ -333,29 +348,6 @@
         </div>
 
         <!-- Panel: Character Roster -->
-        <div id="panelCharacterRoster" class="feature-panel hidden">
-          <button class="btn-back" data-back>→ بازگشت</button>
-          <p class="hint-text">برای هر کاراکتر فیلم، عکس مرجع، اسم و اپیزودی که توش هست رو ثبت کن — خودکار یه توضیح هویت هم می‌سازیم که بتونی توی پرامت‌های بعدی برای ثابت‌نگه‌داشتن چهره/بدنش استفاده کنی.</p>
-
-          <label class="field-label">عکس مرجع کاراکتر</label>
-          <div id="rosterImageRow" class="chip-row"></div>
-          <input id="rosterImageInput" type="file" accept="image/*" hidden />
-
-          <label class="field-label">اسم کاراکتر</label>
-          <input id="rosterNameInput" type="text" class="input" placeholder="مثلاً: آرش" />
-
-          <label class="field-label">اپیزود(ها)</label>
-          <input id="rosterEpisodeInput" type="text" class="input" placeholder="مثلاً: اپیزود ۱، ۳" />
-
-          <div id="rosterErrorBox" class="error-box hidden"></div>
-          <button id="rosterAddBtn" class="btn-secondary">افزودن کاراکتر</button>
-
-          <div class="divider"></div>
-
-          <label class="field-label">کاراکترهای ثبت‌شده</label>
-          <div id="rosterList"></div>
-        </div>
-
       </div>
     </div>
   </div>
