@@ -72,6 +72,7 @@ const state = {
   swapImage: null,
   motionImage: null,
   characterRoster: [],
+  useCharacterRoster: false,
 };
 
 // ---------- Helpers ----------
@@ -170,6 +171,13 @@ function buildSystemPrompt() {
     "ATMOSPHERE & STYLE — overall mood, genre/film reference touchstones, texture (film grain, digital clean, anamorphic, etc).",
   ];
 
+  const useRoster = state.useCharacterRoster && state.characterRoster.length > 0;
+  if (useRoster) {
+    sectionList.unshift(
+      "CHARACTER APPEARANCES — list which known roster characters (by name) genuinely appear in this video, based on matching the reference images/idea against the roster below. If none of the roster characters appear, say so explicitly. Do not assume a character is present just because it's listed in the roster."
+    );
+  }
+
   if (state.musicEnabled) {
     sectionList.push("MUSIC — specific genre, instrumentation, tempo/BPM feel, and how the musical energy arcs and syncs to the on-screen action across the clip.");
     sectionList.push("SOUND DESIGN — ambient sound and diegetic sound cues layered under the music.");
@@ -214,6 +222,17 @@ If multiple subjects appear, keep each one's identity, body, and wardrobe separa
 
   const qualityCheck = `\nSILENT SELF-CHECK (do not print this): before answering, verify — is the locked identity/body/clothing/species preserved throughout? Is every action physically believable and precisely described (not vague)? Is the camera movement clear? Does the prompt stay true to the user's original idea without secondary detail burying it? Is it free of contradictions and directly ready to paste into a video platform? If any check fails, silently revise before responding.`;
 
+  const rosterInstruction = useRoster
+    ? `
+KNOWN CHARACTER ROSTER: The user maintains a roster of previously defined characters. Their reference photos are attached (in the same order listed below, after any other reference images), each with a short identity description:
+${state.characterRoster.map((c, i) => `${i + 1}. ${c.name} (${c.episode || "no episode noted"}): ${c.description}`).join("\n")}
+Compare the current reference image(s)/idea against this roster to see which ones genuinely appear in this video.`
+    : "";
+
+  const rosterPerSegmentInstruction = useRoster
+    ? `\nCHARACTERS PER SEGMENT: At the very start of EVERY segment (right after its "### SEGMENT <n> ###" marker, before LOGLINE), add one line: "Characters in this segment: [names]" listing which known roster characters (by name) have a role in that specific segment. If none, write "Characters in this segment: none from the roster."`
+    : "";
+
   const platformLabel = PLATFORMS.find((p) => p.id === state.platform)?.label;
 
   if (!state.splitEnabled) {
@@ -226,7 +245,7 @@ The user will give you:
 - Aspect ratio: ${state.aspect}
 - Target duration: ${state.duration}
 - Optional extra style notes
-${consistencyLocks}
+${consistencyLocks}${rosterInstruction}
 Your job: produce ONE finished, copy-paste-ready video generation prompt, structured with these labeled sections (use these exact uppercase labels, each on its own line, followed by tightly written descriptive detail — not bullet fragments but flowing cinematic description):
 
 ${sectionList.join("\n")}
@@ -250,7 +269,7 @@ The user will give you:
 - Duration per segment: ${state.duration}
 - Number of segments to split the idea into: ${state.segmentCount}
 - Optional extra style notes
-${consistencyLocks}
+${consistencyLocks}${rosterInstruction}
 Your job: break the overall idea into exactly ${state.segmentCount} sequential clips that together tell the full story with zero visual discontinuity. Output each segment starting with a line EXACTLY in this format (nothing else on that line):
 ### SEGMENT <n> ###
 
@@ -258,6 +277,7 @@ Then, for each segment, write the labeled sections below:
 
 ${sectionList.join("\n")}
 CONTINUITY — for segment 1, describe the exact opening frame in full detail (this frame will be captured and reused). For every segment after the first, explicitly instruct: "Begin this clip from the final frame of the previous clip (use it as the image-to-video starting reference)" and state precisely which elements must remain pixel-identical to that last frame (identity, body, wardrobe, environment, lighting, camera framing) before the new motion begins.
+${rosterPerSegmentInstruction}
 ${dialogueInstruction}${musicInstruction}
 ${qualityCheck}
 
@@ -406,6 +426,7 @@ const rosterEpisodeInput = $("rosterEpisodeInput");
 const rosterErrorBox = $("rosterErrorBox");
 const rosterAddBtn = $("rosterAddBtn");
 const rosterList = $("rosterList");
+const rosterMatchToggle = $("rosterMatchToggle");
 
 const titlesErrorBox = $("titlesErrorBox");
 const titlesGenerateBtn = $("titlesGenerateBtn");
@@ -560,6 +581,11 @@ musicToggle.addEventListener("click", () => {
   musicStyleInput.classList.toggle("hidden", !state.musicEnabled);
 });
 
+rosterMatchToggle.addEventListener("click", () => {
+  state.useCharacterRoster = !state.useCharacterRoster;
+  setSwitch(rosterMatchToggle, state.useCharacterRoster);
+});
+
 function showError(msg) {
   errorBox.textContent = msg;
   errorBox.classList.remove("hidden");
@@ -660,6 +686,15 @@ generateBtn.addEventListener("click", async () => {
       type: "image",
       source: { type: "base64", media_type: img.mediaType, data: img.base64 },
     }));
+
+    if (state.useCharacterRoster && state.characterRoster.length > 0) {
+      state.characterRoster.forEach((c) => {
+        contentBlocks.push({
+          type: "image",
+          source: { type: "base64", media_type: c.mediaType, data: c.base64 },
+        });
+      });
+    }
 
     const presetDescriptor = state.selectedPreset
       ? STYLE_PRESETS.find((p) => p.id === state.selectedPreset)?.descriptor
@@ -1414,6 +1449,7 @@ function saveDraft() {
       splitEnabled: state.splitEnabled,
       segmentCount: state.segmentCount,
       hasDialogue: state.hasDialogue,
+      useCharacterRoster: state.useCharacterRoster,
       musicEnabled: state.musicEnabled,
       selectedPreset: state.selectedPreset,
       images: state.images.map((img) => ({ base64: img.base64, mediaType: img.mediaType })),
@@ -1451,6 +1487,7 @@ function loadDraft() {
     state.splitEnabled = !!draft.splitEnabled;
     state.segmentCount = draft.segmentCount || state.segmentCount;
     state.hasDialogue = !!draft.hasDialogue;
+    state.useCharacterRoster = !!draft.useCharacterRoster;
     state.musicEnabled = !!draft.musicEnabled;
     state.selectedPreset = draft.selectedPreset || null;
     state.result = draft.result || "";
@@ -1486,6 +1523,8 @@ function syncUIFromState() {
 
   setSwitch(musicToggle, state.musicEnabled);
   musicStyleInput.classList.toggle("hidden", !state.musicEnabled);
+
+  setSwitch(rosterMatchToggle, state.useCharacterRoster);
 
   if (state.outputLang === "fa") {
     langFaBtn.classList.add("active");
