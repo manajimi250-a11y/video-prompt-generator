@@ -666,6 +666,38 @@ copyAllBtn.addEventListener("click", () => {
   navigator.clipboard.writeText(state.result).then(() => flashCopied(copyAllBtn));
 });
 
+function extractSubjectSection(text) {
+  const match = text.match(/SUBJECT\(?S?\)?\s*[—-]?\s*([\s\S]*?)(?=\n[A-Z][A-Z0-9 &/()–-]{3,}\n|\n[A-Z][A-Z0-9 &/()–-]{3,}$|$)/i);
+  return match ? match[1].trim().slice(0, 500) : "";
+}
+
+function autoAddCharactersFromResult(text) {
+  if (!state.useCharacterRoster || state.images.length === 0) return;
+  const description = extractSubjectSection(text);
+  if (!description) return;
+
+  let added = false;
+  state.images.forEach((img) => {
+    const alreadyExists = state.characterRoster.some((c) => c.base64 === img.base64);
+    if (alreadyExists) return;
+    const autoIndex = state.characterRoster.length + 1;
+    state.characterRoster.push({
+      name: `کاراکتر ${autoIndex}`,
+      episode: "",
+      base64: img.base64,
+      mediaType: img.mediaType,
+      previewUrl: img.previewUrl,
+      description,
+    });
+    added = true;
+  });
+
+  if (added) {
+    saveDraft();
+    renderRosterList();
+  }
+}
+
 generateBtn.addEventListener("click", async () => {
   if (!state.idea.trim()) {
     showError("لطفاً ابتدا ایده کلی ویدیو را بنویسید.");
@@ -717,6 +749,7 @@ generateBtn.addEventListener("click", async () => {
     const maxTokens = state.splitEnabled ? 900 * state.segmentCount + 700 : 2000;
     const text = await callAI(buildSystemPrompt(), [{ role: "user", content: contentBlocks }], maxTokens);
     state.result = text;
+    autoAddCharactersFromResult(text);
   } catch (e) {
     showError("تولید پرامت ناموفق بود. لطفاً دوباره تلاش کنید.");
   } finally {

@@ -113,8 +113,19 @@
         <div class="divider"></div>
 
         <label class="field-label">📒 دفترچه کاراکترها</label>
-        <p class="hint-text" style="margin-top:0">برای هر کاراکتر، عکس مرجع، اسم و اپیزودی که توش هست رو ثبت کن — خودکار یه توضیح هویت می‌سازیم که بتونی توی پرامت‌های بعدی برای ثابت‌نگه‌داشتن چهره/بدنش استفاده کنی.</p>
+        <p class="hint-text" style="margin-top:0">وقتی سوییچ پایین رو روشن کنی، با هر پرامتی که با عکس مرجع می‌سازی، کاراکترش خودکار به این دفترچه اضافه می‌شه — نیازی به پرکردن دستی فرم زیر نیست، مگه بخوای از قبل یه کاراکتر رو ثبت کنی.</p>
 
+        <div class="toggle-row">
+          <div>
+            <p class="toggle-label">تشخیص و ثبت خودکار کاراکترها</p>
+            <p class="toggle-sub">کاراکتر پرامتی که می‌سازی خودکار به دفترچه اضافه می‌شه، و اگه از قبل توی دفترچه بود، مشخص می‌کنه کدوم بخش‌ها بهش تعلق داره</p>
+          </div>
+          <button id="rosterMatchToggle" class="switch"><span class="knob"></span></button>
+        </div>
+
+        <div class="divider"></div>
+
+        <label class="field-label">افزودن دستی (اختیاری)</label>
         <label class="field-label">عکس مرجع کاراکتر</label>
         <div id="rosterImageRow" class="chip-row"></div>
         <input id="rosterImageInput" type="file" accept="image/*" hidden />
@@ -132,16 +143,6 @@
 
         <label class="field-label">کاراکترهای ثبت‌شده</label>
         <div id="rosterList"></div>
-
-        <div class="divider"></div>
-
-        <div class="toggle-row">
-          <div>
-            <p class="toggle-label">تشخیص کاراکترهای دفترچه در پرامت</p>
-            <p class="toggle-sub">اول مشخص می‌کنه کدوم کاراکترهای ثبت‌شده توی این پرامت (و هر بخش، اگه چندتایی باشه) نقش دارن</p>
-          </div>
-          <button id="rosterMatchToggle" class="switch"><span class="knob"></span></button>
-        </div>
       </details>
 
       <div class="card">
