@@ -163,7 +163,7 @@ function buildSystemPrompt() {
     "LOGLINE — one vivid sentence capturing the whole shot/scene.",
     "SCENE & SETTING — location, time of day, environment detail, set dressing.",
     "SUBJECT(S) — who/what is in frame: appearance, wardrobe, expression, referencing the uploaded images where relevant. Include only characteristics that are visible in the reference or explicitly requested by the user — do not invent unnecessary personal details.",
-    "ACTION & TIMELINE — describe the shot as four clear stages: OPENING (the first moment/frame), DEVELOPMENT (how the action builds), MAIN MOMENT (the strongest/most important visual beat), and ENDING (the final position/frame) — with exact starting position, movement direction/speed, and ending position for every important action. Never write vague lines like \"the subject moves beautifully\" — describe precisely how.",
+    "ACTION & TIMELINE — describe the shot as four clear stages: OPENING (the first moment/frame), DEVELOPMENT (how the action builds), MAIN MOMENT (the strongest/most important visual beat), and ENDING (the final position/frame) — with exact starting position, movement direction/speed, and ending position for every important action. Never write vague lines like \"the subject moves beautifully\" — describe precisely how. REALISTIC PHYSICS: unless the user's idea explicitly asks for slow-motion, flight, or an exaggerated/stylized movement, describe all motion at normal, real-world speed and under normal gravity — e.g. a jump or fall must read as a quick, natural jump/fall, not a graceful glide, hover, or float. Avoid words like \"soars\", \"floats\", \"glides\", or \"drifts\" for grounded actions, since video models can misread them as flight or slow-motion.",
     "CAMERA — shot type, framing, lens feel, camera movement (dolly/pan/handheld/crane/static), movement speed, depth of field. Give ONE clear, coherent camera instruction — do not stack multiple conflicting movements into the same shot.",
     "LIGHTING & COLOR — light sources, direction, color grade, contrast, mood of the palette.",
     "ATMOSPHERE & STYLE — overall mood, genre/film reference touchstones, texture (film grain, digital clean, anamorphic, etc).",
@@ -176,7 +176,7 @@ function buildSystemPrompt() {
     sectionList.push("AUDIO NOTES — ambient sound and diegetic sound cues (no music track; describe only environmental/atmospheric sound).");
   }
   sectionList.push(
-    "NEGATIVE / AVOID — a concise but powerful avoidance list covering whichever categories are relevant: IDENTITY (different face, face-swap, identity drift, facial morphing), BODY (proportion changes, distorted anatomy, duplicated/missing limbs), CLOTHING (wardrobe changes, color/design changes, disappearing accessories), ANIMAL (different animal, species/fur/marking changes) if applicable, and VIDEO artifacts (flickering, temporal inconsistency, object morphing, unstable background, unwanted text/subtitles/logos)."
+    "NEGATIVE / AVOID — a concise but powerful avoidance list covering whichever categories are relevant: IDENTITY (different face, face-swap, identity drift, facial morphing), BODY (proportion changes, distorted anatomy, duplicated/missing limbs), CLOTHING (wardrobe changes, color/design changes, disappearing accessories), ANIMAL (different animal, species/fur/marking changes) if applicable, MOTION (unintended slow-motion, unintended floating/flying/hovering, unnatural gravity, inconsistent speed) unless those effects were explicitly requested, and VIDEO artifacts (flickering, temporal inconsistency, object morphing, unstable background, unwanted text/subtitles/logos)."
   );
 
   const hasImages = state.images.length > 0;
@@ -1066,7 +1066,7 @@ LOGLINE — one vivid sentence.
 SCENE & SETTING — brief scene context grounding the shot.
 SUBJECT — who/what is in frame, appearance, wardrobe.${faceInstruction}${wardrobeInstruction}
 CAMERA MOTION — describe the "${cameraMovement}" movement at "${speed}" speed as three precise stages — START (exact camera position), PATH (the trajectory it travels), END (exact ending position) — using precise cinematography terminology. Give ONE coherent camera movement, not several conflicting ones stacked together.
-SUBJECT MOTION — precise description of how the subject moves, exactly synced in timing with the camera motion described above.
+SUBJECT MOTION — precise description of how the subject moves, exactly synced in timing with the camera motion described above. Unless the user's description explicitly implies flight, floating, or slow-motion, keep the motion at normal real-world speed and under normal gravity (e.g. a jump or fall must read as quick and natural, not a graceful glide or hover). Avoid words like "soars", "floats", or "glides" for grounded actions.
 FRAMING — starting composition/framing and ending composition/framing (what's in frame, headroom, lead room).
 LIGHTING & COLOR — brief.
 NEGATIVE / AVOID — motion artifacts to avoid (e.g., jitter, warped anatomy, inconsistent speed, motion blur errors).
@@ -1231,14 +1231,15 @@ swapCopyBtn.addEventListener("click", () => {
 
 // ---------- More modal: viral titles & hashtags ----------
 function buildTitlesSystemPrompt() {
-  return `You are a viral social media strategist specializing in catchy, high-click-through titles/captions and hashtag research for short-form video (TikTok, YouTube Shorts, Instagram Reels).
+  return `You are a viral social media strategist specializing in catchy, high-click-through titles/captions and platform-specific hashtag research for short-form video.
 
 Given a short description of a video's topic/idea, produce:
 
 TITLES — exactly 8 catchy, scroll-stopping, user-friendly title/caption options in English, each on its own line, numbered 1-8. Vary the style across the list (curiosity-driven, bold claim, funny, relatable, question-based, etc). Keep each under 12 words.
-HASHTAGS — a single line of 15-20 relevant, high-traffic English hashtags (mix of broad/popular and niche-specific), space-separated, each starting with #.
+HASHTAGS FOR INSTAGRAM — a single line of 15-20 relevant English hashtags suited to Instagram's culture (mix of broad reach tags, niche/community tags, and a couple of Reels-specific tags), space-separated, each starting with #.
+HASHTAGS FOR TIKTOK — a single line of 15-20 relevant English hashtags suited to TikTok's culture (mix of trending/For-You-Page tags, challenge-style tags, and niche tags), space-separated, each starting with #. This list should genuinely differ from the Instagram list, not just repeat it — TikTok hashtag culture favors trend/challenge phrasing over Instagram's more descriptive/niche style.
 
-Do not add any preamble, explanation, or markdown formatting like asterisks. Just the two labeled sections exactly as specified above.`;
+Do not add any preamble, explanation, or markdown formatting like asterisks. Just the three labeled sections exactly as specified above.`;
 }
 
 titlesGenerateBtn.addEventListener("click", async () => {
